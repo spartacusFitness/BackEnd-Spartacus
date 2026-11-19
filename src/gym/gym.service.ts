@@ -238,7 +238,7 @@ export class GymService {
   /* ---------------- Socios en mostrador ---------------- */
 
   /** Alta en recepción: crea la cuenta (confirmada, porque se verificó en persona) y la deja como socia de la sede. */
-  async altaSocio(actor: Actor, sedeId: string, nombre: string, email: string, fechaNacimiento?: string) {
+  async altaSocio(actor: Actor, sedeId: string, nombre: string, email: string, fechaNacimiento?: string, fisico: { alturaCm?: number; pesoKg?: number; objetivo?: string } = {}) {
     const [, existente] = await Promise.all([this.exigirTurno(sedeId), this.orm.Perfil.where({ email }).first()]);
     let perfil = existente;
     if (!perfil) {
@@ -258,6 +258,8 @@ export class GymService {
         sedeId,
         verificado: true,
         fechaNacimiento: fechaNacimiento ? aFecha(fechaNacimiento) : null,
+        alturaCm: fisico.alturaCm ?? null,
+        objetivo: fisico.objetivo ?? null,
       });
     } else {
       // Ya tenía cuenta (p. ej. viene de otra sede): se inscribe aquí y conserva su historial.
@@ -266,6 +268,9 @@ export class GymService {
     await this.orm.RolAsignado.where({ perfilId: perfil.id, rol: 'socio' }).deleteAll();
     await this.orm.RolAsignado.create({ perfilId: perfil.id, rol: 'socio', sedeId });
     authCache.invalidarPerfil(perfil.id);
+    if (fisico.pesoKg) {
+      await this.orm.Medicion.create({ perfilId: perfil.id, fecha: aFecha(hoy()), pesoGr: Math.round(fisico.pesoKg * 1000), notas: 'Alta en recepción', registradoPor: actor.perfilId });
+    }
     const correoEnviado = await enviarCorreoContrasena(email, `${config.frontendUrls[0]}/restablecer`);
     await this.bitacora.registrar({ sedeId, actorPerfilId: actor.perfilId, accion: 'socio.alta', entidad: 'Perfil', entidadId: perfil.id, datos: { email } });
     return { perfil, correoEnviado };

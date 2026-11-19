@@ -11,3 +11,7 @@ Requieren el backend corriendo (`npm run build && npm run start`) y `backend/.en
 ```bash
 node test/e2e/fase2.mjs
 ```
+
+## fase3.mjs — coaches (aislada)
+
+`node test/e2e/fase3.mjs` con el backend corriendo. Crea una sede temporal `prueba-…`, un admin, dos coaches y una socia @ejemplo.com; prueba alta/baja de coaches, catálogo de máquinas y ejercicios, rutinas (historial, validaciones), rachas (semanal y consecutiva), peso, estatura, objetivo y la privacidad de los datos de salud. Al final borra la sede, sus datos y las cuentas. `CONSERVAR_SEDE=1` deja la sede para inspeccionarla.

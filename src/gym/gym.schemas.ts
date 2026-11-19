@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { OBJETIVOS } from './coach.schemas.js';
 
 export const centavos = z.number({ error: 'Escribe una cantidad.' }).int().min(0).max(100_000_000);
 export const pin = z.string().regex(/^\d{4,6}$/, { error: 'El PIN debe tener de 4 a 6 números.' });
@@ -55,6 +56,9 @@ export const altaSocioSchema = z.object({
   nombre: texto(2, 80, 'Escribe el nombre completo.'),
   email: z.string().trim().toLowerCase().pipe(z.email({ error: 'Escribe un correo válido.' })),
   fechaNacimiento: fecha.optional(),
+  alturaCm: z.number().int().min(80, { error: 'La estatura va en centímetros (ej. 170).' }).max(250).optional(),
+  pesoKg: z.number().min(20, { error: 'El peso va en kg.' }).max(350).optional(),
+  objetivo: z.enum(OBJETIVOS, { error: 'Elige un objetivo del catálogo.' }).optional(),
 });
 
 export const cobroSchema = z.object({

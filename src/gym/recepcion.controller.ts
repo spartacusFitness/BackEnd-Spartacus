@@ -176,8 +176,8 @@ export class RecepcionController {
   @Post('socios')
   async alta(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string, @Body() body: unknown) {
     const actor = this.permiso(req, sedeId);
-    const { nombre, email, fechaNacimiento } = parse(altaSocioSchema, body);
-    const { perfil, correoEnviado } = await this.gym.altaSocio(actor, sedeId, nombre, email, fechaNacimiento);
+    const { nombre, email, fechaNacimiento, ...fisico } = parse(altaSocioSchema, body);
+    const { perfil, correoEnviado } = await this.gym.altaSocio(actor, sedeId, nombre, email, fechaNacimiento, fisico);
     return { id: perfil.id, nombre: perfil.nombre, email: perfil.email, correoEnviado };
   }
 

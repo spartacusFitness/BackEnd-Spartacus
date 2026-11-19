@@ -20,6 +20,18 @@
       "model": "Dispositivo",
       "namespace": "public"
     },
+    "Ejercicio": {
+      "model": "Ejercicio",
+      "namespace": "public"
+    },
+    "Maquina": {
+      "model": "Maquina",
+      "namespace": "public"
+    },
+    "Medicion": {
+      "model": "Medicion",
+      "namespace": "public"
+    },
     "Membresia": {
       "model": "Membresia",
       "namespace": "public"
@@ -62,6 +74,22 @@
     },
     "RolAsignado": {
       "model": "RolAsignado",
+      "namespace": "public"
+    },
+    "Rutina": {
+      "model": "Rutina",
+      "namespace": "public"
+    },
+    "RutinaDia": {
+      "model": "RutinaDia",
+      "namespace": "public"
+    },
+    "RutinaEjercicio": {
+      "model": "RutinaEjercicio",
+      "namespace": "public"
+    },
+    "Salud": {
+      "model": "Salud",
       "namespace": "public"
     },
     "Sede": {
@@ -695,6 +723,388 @@
               "table": "Dispositivo"
             }
           },
+          "Ejercicio": {
+            "fields": {
+              "activo": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "categoria": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "equipo": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "indicaciones": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "maquinaId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "nombre": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "repeticiones": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sedeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "series": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "enRutinas": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "ejercicioId"
+                  ]
+                },
+                "to": {
+                  "model": "RutinaEjercicio",
+                  "namespace": "public"
+                }
+              },
+              "maquina": {
+                "cardinality": "N:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "maquinaId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Maquina",
+                  "namespace": "public"
+                }
+              },
+              "sede": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sedeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Sede",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "activo": {
+                  "column": "activo"
+                },
+                "categoria": {
+                  "column": "categoria"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "equipo": {
+                  "column": "equipo"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "indicaciones": {
+                  "column": "indicaciones"
+                },
+                "maquinaId": {
+                  "column": "maquinaId"
+                },
+                "nombre": {
+                  "column": "nombre"
+                },
+                "repeticiones": {
+                  "column": "repeticiones"
+                },
+                "sedeId": {
+                  "column": "sedeId"
+                },
+                "series": {
+                  "column": "series"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Ejercicio"
+            }
+          },
+          "Maquina": {
+            "fields": {
+              "activa": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "categoria": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "nombre": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sedeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "ejercicios": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "maquinaId"
+                  ]
+                },
+                "to": {
+                  "model": "Ejercicio",
+                  "namespace": "public"
+                }
+              },
+              "sede": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sedeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Sede",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "activa": {
+                  "column": "activa"
+                },
+                "categoria": {
+                  "column": "categoria"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "nombre": {
+                  "column": "nombre"
+                },
+                "sedeId": {
+                  "column": "sedeId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Maquina"
+            }
+          },
+          "Medicion": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "fecha": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "notas": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "perfilId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "pesoGr": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "registradoPor": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "perfil": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "perfilId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Perfil",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "fecha": {
+                  "column": "fecha"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "notas": {
+                  "column": "notas"
+                },
+                "perfilId": {
+                  "column": "perfilId"
+                },
+                "pesoGr": {
+                  "column": "pesoGr"
+                },
+                "registradoPor": {
+                  "column": "registradoPor"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Medicion"
+            }
+          },
           "Membresia": {
             "fields": {
               "canceladaEn": {
@@ -1220,6 +1630,13 @@
           },
           "Perfil": {
             "fields": {
+              "alturaCm": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "apodo": {
                 "nullable": true,
                 "type": {
@@ -1269,6 +1686,13 @@
                 }
               },
               "nombre": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "objetivo": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1338,6 +1762,21 @@
                   "namespace": "public"
                 }
               },
+              "mediciones": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "perfilId"
+                  ]
+                },
+                "to": {
+                  "model": "Medicion",
+                  "namespace": "public"
+                }
+              },
               "membresias": {
                 "cardinality": "1:N",
                 "on": {
@@ -1365,6 +1804,37 @@
                 },
                 "to": {
                   "model": "RolAsignado",
+                  "namespace": "public"
+                }
+              },
+              "rutinas": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "perfilId"
+                  ]
+                },
+                "to": {
+                  "model": "Rutina",
+                  "namespace": "public"
+                }
+              },
+              "salud": {
+                "cardinality": "1:1",
+                "nullable": true,
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "perfilId"
+                  ]
+                },
+                "to": {
+                  "model": "Salud",
                   "namespace": "public"
                 }
               },
@@ -1419,6 +1889,9 @@
             },
             "storage": {
               "fields": {
+                "alturaCm": {
+                  "column": "alturaCm"
+                },
                 "apodo": {
                   "column": "apodo"
                 },
@@ -1439,6 +1912,9 @@
                 },
                 "nombre": {
                   "column": "nombre"
+                },
+                "objetivo": {
+                  "column": "objetivo"
                 },
                 "sedeId": {
                   "column": "sedeId"
@@ -2341,6 +2817,449 @@
               "table": "RolAsignado"
             }
           },
+          "Rutina": {
+            "fields": {
+              "activa": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "coachPerfilId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "nombre": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "notas": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "perfilId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sedeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "dias": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "rutinaId"
+                  ]
+                },
+                "to": {
+                  "model": "RutinaDia",
+                  "namespace": "public"
+                }
+              },
+              "perfil": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "perfilId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Perfil",
+                  "namespace": "public"
+                }
+              },
+              "sede": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sedeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Sede",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "activa": {
+                  "column": "activa"
+                },
+                "coachPerfilId": {
+                  "column": "coachPerfilId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "nombre": {
+                  "column": "nombre"
+                },
+                "notas": {
+                  "column": "notas"
+                },
+                "perfilId": {
+                  "column": "perfilId"
+                },
+                "sedeId": {
+                  "column": "sedeId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Rutina"
+            }
+          },
+          "RutinaDia": {
+            "fields": {
+              "categorias": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "diaSemana": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "notas": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rutinaId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "ejercicios": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "rutinaDiaId"
+                  ]
+                },
+                "to": {
+                  "model": "RutinaEjercicio",
+                  "namespace": "public"
+                }
+              },
+              "rutina": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rutinaId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Rutina",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "categorias": {
+                  "column": "categorias"
+                },
+                "diaSemana": {
+                  "column": "diaSemana"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "notas": {
+                  "column": "notas"
+                },
+                "rutinaId": {
+                  "column": "rutinaId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "RutinaDia"
+            }
+          },
+          "RutinaEjercicio": {
+            "fields": {
+              "descansoSeg": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "ejercicioId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "indicaciones": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "orden": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "repeticiones": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rutinaDiaId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "series": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "dia": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "rutinaDiaId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "RutinaDia",
+                  "namespace": "public"
+                }
+              },
+              "ejercicio": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "ejercicioId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Ejercicio",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "descansoSeg": {
+                  "column": "descansoSeg"
+                },
+                "ejercicioId": {
+                  "column": "ejercicioId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "indicaciones": {
+                  "column": "indicaciones"
+                },
+                "orden": {
+                  "column": "orden"
+                },
+                "repeticiones": {
+                  "column": "repeticiones"
+                },
+                "rutinaDiaId": {
+                  "column": "rutinaDiaId"
+                },
+                "series": {
+                  "column": "series"
+                }
+              },
+              "namespaceId": "public",
+              "table": "RutinaEjercicio"
+            }
+          },
+          "Salud": {
+            "fields": {
+              "alergias": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "condiciones": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "perfilId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "perfil": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "perfilId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Perfil",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "alergias": {
+                  "column": "alergias"
+                },
+                "condiciones": {
+                  "column": "condiciones"
+                },
+                "perfilId": {
+                  "column": "perfilId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Salud"
+            }
+          },
           "Sede": {
             "fields": {
               "activa": {
@@ -2450,6 +3369,36 @@
                   "namespace": "public"
                 }
               },
+              "ejercicios": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sedeId"
+                  ]
+                },
+                "to": {
+                  "model": "Ejercicio",
+                  "namespace": "public"
+                }
+              },
+              "maquinas": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sedeId"
+                  ]
+                },
+                "to": {
+                  "model": "Maquina",
+                  "namespace": "public"
+                }
+              },
               "perfiles": {
                 "cardinality": "1:N",
                 "on": {
@@ -2537,6 +3486,21 @@
                 },
                 "to": {
                   "model": "RolAsignado",
+                  "namespace": "public"
+                }
+              },
+              "rutinas": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sedeId"
+                  ]
+                },
+                "to": {
+                  "model": "Rutina",
                   "namespace": "public"
                 }
               },
@@ -2958,6 +3922,21 @@
               "namespaceId": "public",
               "tableName": "Dispositivo"
             },
+            "Ejercicio": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Ejercicio"
+            },
+            "Maquina": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Maquina"
+            },
+            "Medicion": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Medicion"
+            },
             "Membresia": {
               "kind": "rls",
               "namespaceId": "public",
@@ -3012,6 +3991,26 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "RolAsignado"
+            },
+            "Rutina": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Rutina"
+            },
+            "RutinaDia": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "RutinaDia"
+            },
+            "RutinaEjercicio": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "RutinaEjercicio"
+            },
+            "Salud": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Salud"
             },
             "Sede": {
               "kind": "rls",
@@ -3393,6 +4392,329 @@
                   ],
                   "name": "Dispositivo_perfilId_idx_18f1fe5e",
                   "prefix": "Dispositivo_perfilId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "Ejercicio": {
+              "columns": {
+                "activo": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "categoria": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "equipo": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "indicaciones": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "maquinaId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "nombre": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "repeticiones": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "10-12"
+                  },
+                  "nullable": false
+                },
+                "sedeId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "series": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "kind": "literal",
+                    "value": 3
+                  },
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Ejercicio_sedeId_idx_d8464762"
+                  },
+                  "source": {
+                    "columns": [
+                      "sedeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Ejercicio"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Sede"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Ejercicio_maquinaId_idx_7712390d"
+                  },
+                  "source": {
+                    "columns": [
+                      "maquinaId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Ejercicio"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Maquina"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "maquinaId"
+                  ],
+                  "name": "Ejercicio_maquinaId_idx_7712390d",
+                  "prefix": "Ejercicio_maquinaId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "sedeId"
+                  ],
+                  "name": "Ejercicio_sedeId_idx_d8464762",
+                  "prefix": "Ejercicio_sedeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "Maquina": {
+              "columns": {
+                "activa": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "categoria": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "nombre": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "sedeId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Maquina_sedeId_idx_d8464762"
+                  },
+                  "source": {
+                    "columns": [
+                      "sedeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Maquina"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Sede"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "sedeId"
+                  ],
+                  "name": "Maquina_sedeId_idx_d8464762",
+                  "prefix": "Maquina_sedeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "Medicion": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "fecha": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "notas": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "perfilId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "pesoGr": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "registradoPor": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Medicion_perfilId_idx_18f1fe5e"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "perfilId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Medicion"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Perfil"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "perfilId"
+                  ],
+                  "name": "Medicion_perfilId_idx_18f1fe5e",
+                  "prefix": "Medicion_perfilId_idx",
                   "unique": false
                 }
               ],
@@ -3845,6 +5167,11 @@
             },
             "Perfil": {
               "columns": {
+                "alturaCm": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
                 "apodo": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
@@ -3886,6 +5213,11 @@
                   "nullable": false
                 },
                 "nombre": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "objetivo": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": true
@@ -4735,6 +6067,389 @@
                 }
               ]
             },
+            "Rutina": {
+              "columns": {
+                "activa": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "coachPerfilId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "nombre": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "notas": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "perfilId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "sedeId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Rutina_perfilId_idx_18f1fe5e"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "perfilId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Rutina"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Perfil"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Rutina_sedeId_idx_d8464762"
+                  },
+                  "source": {
+                    "columns": [
+                      "sedeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Rutina"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Sede"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "perfilId"
+                  ],
+                  "name": "Rutina_perfilId_idx_18f1fe5e",
+                  "prefix": "Rutina_perfilId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "sedeId"
+                  ],
+                  "name": "Rutina_sedeId_idx_d8464762",
+                  "prefix": "Rutina_sedeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "RutinaDia": {
+              "columns": {
+                "categorias": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": ""
+                  },
+                  "nullable": false
+                },
+                "diaSemana": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "notas": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "rutinaId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "RutinaDia_rutinaId_idx_76966a63"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rutinaId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RutinaDia"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Rutina"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "rutinaId"
+                  ],
+                  "name": "RutinaDia_rutinaId_idx_76966a63",
+                  "prefix": "RutinaDia_rutinaId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "rutinaId",
+                    "diaSemana"
+                  ]
+                }
+              ]
+            },
+            "RutinaEjercicio": {
+              "columns": {
+                "descansoSeg": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
+                },
+                "ejercicioId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "indicaciones": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "orden": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "repeticiones": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "rutinaDiaId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "series": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "RutinaEjercicio_rutinaDiaId_idx_0c0136b2"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "rutinaDiaId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RutinaEjercicio"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RutinaDia"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "RutinaEjercicio_ejercicioId_idx_4b115bda"
+                  },
+                  "source": {
+                    "columns": [
+                      "ejercicioId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RutinaEjercicio"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Ejercicio"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "ejercicioId"
+                  ],
+                  "name": "RutinaEjercicio_ejercicioId_idx_4b115bda",
+                  "prefix": "RutinaEjercicio_ejercicioId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "rutinaDiaId"
+                  ],
+                  "name": "RutinaEjercicio_rutinaDiaId_idx_0c0136b2",
+                  "prefix": "RutinaEjercicio_rutinaDiaId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "Salud": {
+              "columns": {
+                "alergias": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "condiciones": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "perfilId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "primaryKey": true
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "perfilId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Salud"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Perfil"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "perfilId"
+                ]
+              },
+              "uniques": []
+            },
             "Sede": {
               "columns": {
                 "activa": {
@@ -5200,10 +6915,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f092a16d18e084476c260cdaf239f69068286d038467fa99d240adcf797dbd7a"
+    "storageHash": "87cd1db0b1b04212ffbb34615efd95b429a278e123c8b6674babbd181e4f4d6a"
   },
   "execution": {
-    "executionHash": "246dba4f5d24898035a0e4f2c24f756f750575789b90c9dd70f5292416ce6473",
+    "executionHash": "c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9",
     "mutations": {
       "defaults": [
         {
@@ -5280,6 +6995,48 @@
           "ref": {
             "entry": "Dispositivo",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Ejercicio",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Maquina",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Medicion",
+            "field": "createdAt",
             "namespace": "public"
           }
         },
@@ -5522,6 +7279,62 @@
           "ref": {
             "entry": "RolAsignado",
             "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Rutina",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Rutina",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Salud",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },

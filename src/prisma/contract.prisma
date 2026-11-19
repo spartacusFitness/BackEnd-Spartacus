@@ -90,6 +90,9 @@ model Sede {
   planes          Plan[]
   productos       Producto[]
   promociones     Promocion[]
+  maquinas        Maquina[]
+  ejercicios      Ejercicio[]
+  rutinas         Rutina[]
   createdAt       DateTime           @default(now()) @onCreate(now())
   updatedAt       temporal.UpdatedAt
 
@@ -197,6 +200,13 @@ model Perfil {
   sede            Sede?                  @relation(fields: [sedeId], references: [id])
   /// recepción revisó su identificación en persona
   verificado      Boolean                @default(false)
+  /// estatura en centímetros
+  alturaCm        Int?
+  /// clave del catálogo de objetivos (deficit, volumen, recomposicion, …)
+  objetivo        String?
+  salud           Salud?
+  mediciones      Medicion[]
+  rutinas         Rutina[]
   roles           RolAsignado[]
   dispositivos    Dispositivo[]
   solicitudes     Solicitud[]
@@ -392,6 +402,122 @@ model Bitacora {
   /// JSON con el detalle (antes/después)
   datos           String?
   createdAt       DateTime @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+// ---------------- Fase 3: coaches ----------------
+
+/// Datos de salud. PRIVADOS: solo los ven la persona y los coaches de su sede (ni recepción ni admin).
+model Salud {
+  perfilId    Uuid               @id
+  perfil      Perfil             @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  /// condiciones especiales: lesiones, enfermedades, embarazo…
+  condiciones String?
+  alergias    String?
+  updatedAt   temporal.UpdatedAt
+
+  @@rls
+}
+
+/// Historial de peso (avance). Lo registra la persona o su coach.
+model Medicion {
+  id            Int      @id @default(autoincrement())
+  perfilId      Uuid
+  perfil        Perfil   @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  /// fecha de calendario (12:00 UTC)
+  fecha         DateTime
+  /// peso en gramos
+  pesoGr        Int
+  notas         String?
+  registradoPor Uuid?
+  createdAt     DateTime @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+/// Máquina de una sede (cada sede tiene las suyas).
+model Maquina {
+  id         Int         @id @default(autoincrement())
+  sedeId     String
+  sede       Sede        @relation(fields: [sedeId], references: [id])
+  nombre     String
+  /// grupo muscular principal (pecho, espalda, pierna, …)
+  categoria  String
+  activa     Boolean     @default(true)
+  ejercicios Ejercicio[]
+  createdAt  DateTime    @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+/// Ejercicio del catálogo de la sede: en una máquina o con equipo libre.
+model Ejercicio {
+  id           Int               @id @default(autoincrement())
+  sedeId       String
+  sede         Sede              @relation(fields: [sedeId], references: [id])
+  nombre       String
+  categoria    String
+  /// maquina | mancuernas | barra | ligas | kettlebell | polea | peso_corporal | otro
+  equipo       String
+  maquinaId    Int?
+  maquina      Maquina?          @relation(fields: [maquinaId], references: [id])
+  /// valores sugeridos; la rutina puede cambiarlos
+  series       Int               @default(3)
+  repeticiones String            @default("10-12")
+  indicaciones String?
+  activo       Boolean           @default(true)
+  enRutinas    RutinaEjercicio[]
+  createdAt    DateTime          @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+/// Rutina semanal de un socio, hecha por un coach. Solo una activa por socio.
+model Rutina {
+  id            Int         @id @default(autoincrement())
+  perfilId      Uuid
+  perfil        Perfil      @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  sedeId        String
+  sede          Sede        @relation(fields: [sedeId], references: [id])
+  coachPerfilId Uuid?
+  nombre        String
+  notas         String?
+  activa        Boolean     @default(true)
+  dias          RutinaDia[]
+  createdAt     DateTime    @default(now()) @onCreate(now())
+  updatedAt     temporal.UpdatedAt
+
+  @@rls
+}
+
+model RutinaDia {
+  id         Int               @id @default(autoincrement())
+  rutinaId   Int
+  rutina     Rutina            @relation(fields: [rutinaId], references: [id], onDelete: Cascade)
+  /// 0 = domingo … 6 = sábado
+  diaSemana  Int
+  /// grupos musculares del día, separados por coma
+  categorias String            @default("")
+  notas      String?
+  ejercicios RutinaEjercicio[]
+
+  @@unique([rutinaId, diaSemana])
+  @@rls
+}
+
+model RutinaEjercicio {
+  id           Int       @id @default(autoincrement())
+  rutinaDiaId  Int
+  dia          RutinaDia @relation(fields: [rutinaDiaId], references: [id], onDelete: Cascade)
+  ejercicioId  Int
+  ejercicio    Ejercicio @relation(fields: [ejercicioId], references: [id])
+  orden        Int
+  series       Int
+  repeticiones String
+  /// segundos de descanso entre series
+  descansoSeg  Int?
+  indicaciones String?
 
   @@rls
 }
