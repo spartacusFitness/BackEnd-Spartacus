@@ -5,6 +5,7 @@ import 'dotenv/config';
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../../frontend/package.json', import.meta.url));
+const { db } = await import('../../dist/prisma/db.js');
 const { createClient } = require('@supabase/supabase-js');
 
 const SB = process.env.SUPABASE_URL, PUB = process.env.SUPABASE_PUBLISHABLE_KEY, SECRET = process.env.SUPABASE_SECRET_KEY;
@@ -114,6 +115,11 @@ try {
   const socioEmail = `socio.f2.${T}@ejemplo.com`;
   creados.push(await nuevaCuenta(socioEmail, { full_name: 'Socio F2', ubicacion: COORDS }));
   const S = await persona(socioEmail, 'Fuerte-1234');
+  check('socio sin membresía no ve la tienda', (await S.call('GET', '/yo/tienda')).status === 403);
+  // La tienda del socio requiere membresía vigente: se la damos directo en la BD.
+  const plan = await A.call('POST', `/sedes/${SEDE}/planes`, { nombre: 'Mes', tipo: 'mes', duracionDias: 30, precio: 45000 });
+  const fin = new Date(new Date(`${hoyMx}T12:00:00Z`).getTime() + 29 * 86400000);
+  await db.orm.public.Membresia.create({ perfilId: S.yo.id, sedeId: SEDE, planId: plan.body.id, inicio: new Date(`${hoyMx}T12:00:00Z`), fin });
   const cat = await S.call('GET', '/yo/tienda');
   check('socio ve catálogo y solo promos de hoy', cat.status === 200 && cat.body.productos.length === 3 && cat.body.promociones.length === 1 && cat.body.promociones[0].imagenUrl, `${cat.body.productos?.length} productos, ${cat.body.promociones?.length} promo`);
   check('el catálogo no expone el stock exacto', cat.body.productos.every((p) => !('stock' in p) || p.stock === undefined));
@@ -132,8 +138,9 @@ try {
 
   // ---------- Visita: servicio sin inventario ----------
   const visita = await A.call('POST', `/sedes/${SEDE}/productos`, { nombre: 'Visita (1 día)', categoria: 'otro', icono: 'visita', precio: 6000, esServicio: true });
+  await R.call('POST', `/recepcion/${SEDE}/turno/abrir`, { recepcionistaId: rec.body.id, pin: '4321', efectivoInicial: 0 });
   const vv = await R.call('POST', `/recepcion/${SEDE}/ventas`, { items: [{ tipo: 'producto', id: visita.body.id, cantidad: 2 }], metodo: 'efectivo' });
-  check('visita se vende sin stock (servicio)', visita.status === 201 && vv.status === 201 && vv.body.total === 12000, `${visita.status}/${vv.status}`);
+  check('visita se vende sin stock (servicio)', visita.status === 201 && vv.status === 201 && vv.body.total === 12000, `${visita.status}/${vv.status} ${JSON.stringify(vv.body).slice(0, 160)}`);
   check('servicio no lleva inventario → 400', (await R.call('POST', `/sedes/${SEDE}/productos/${visita.body.id}/inventario`, { tipo: 'entrada', cantidad: 5 })).status === 400);
   check('el servicio no aparece en stock bajo', !(await A.call('GET', `/reportes/resumen?desde=${hoyMx}&hasta=${hoyMx}`)).body.stockBajo.some((p) => p.id === visita.body.id));
 } catch (e) {
@@ -150,4 +157,5 @@ try {
     console.log(execSync(`node test/e2e/limpiar-sede-prueba.mjs ${SEDE}`, { cwd: new URL('../..', import.meta.url), encoding: 'utf8' }).trim());
   }
   console.log(`${pass} OK, ${fail} fallas`);
+  await db.close();
 }
