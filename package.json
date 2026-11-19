@@ -22,7 +22,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "contract:emit": "prisma contract emit",
     "seed:sedes": "node dist/scripts/seed-sedes.js",
-    "rol": "node dist/scripts/asignar-rol.js"
+    "rol": "node dist/scripts/asignar-rol.js",
+    "seed:catalogo": "node dist/scripts/seed-catalogo.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
