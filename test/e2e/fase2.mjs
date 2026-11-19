@@ -129,6 +129,13 @@ try {
   check('reporte: alerta de stock bajo (agua 9 ≤ mínimo 5? no; preentreno 4 > 2)', Array.isArray(rep.body.stockBajo));
   check('recepción NO ve reportes', (await R.call('GET', `/reportes/resumen?desde=${hoyMx}&hasta=${hoyMx}`)).status === 403);
   check('rango inválido → 400', (await A.call('GET', `/reportes/resumen?desde=2026-12-31&hasta=2026-01-01`)).status === 400);
+
+  // ---------- Visita: servicio sin inventario ----------
+  const visita = await A.call('POST', `/sedes/${SEDE}/productos`, { nombre: 'Visita (1 día)', categoria: 'otro', icono: 'visita', precio: 6000, esServicio: true });
+  const vv = await R.call('POST', `/recepcion/${SEDE}/ventas`, { items: [{ tipo: 'producto', id: visita.body.id, cantidad: 2 }], metodo: 'efectivo' });
+  check('visita se vende sin stock (servicio)', visita.status === 201 && vv.status === 201 && vv.body.total === 12000, `${visita.status}/${vv.status}`);
+  check('servicio no lleva inventario → 400', (await R.call('POST', `/sedes/${SEDE}/productos/${visita.body.id}/inventario`, { tipo: 'entrada', cantidad: 5 })).status === 400);
+  check('el servicio no aparece en stock bajo', !(await A.call('GET', `/reportes/resumen?desde=${hoyMx}&hasta=${hoyMx}`)).body.stockBajo.some((p) => p.id === visita.body.id));
 } catch (e) {
   fail++;
   console.log('ERROR', e.message);

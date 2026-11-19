@@ -60,6 +60,13 @@ try {
   creados.push(await nuevaCuenta(socioEmail, { full_name: 'Socia Fuerte', ubicacion: COORDS }));
   const S = await persona(socioEmail, 'Fuerte-1234');
   check('la socia queda en la sede temporal', S.yo.sede?.id === SEDE, S.yo.sede?.id);
+  const sinM = await S.call('GET', '/yo/entrenamiento');
+  check('sin membresía: la app está bloqueada', sinM.status === 403 && sinM.body.code === 'sin_membresia', sinM.status);
+  check('sin membresía: tampoco tienda', (await S.call('GET', '/yo/tienda')).status === 403);
+  check('sin membresía: sí ve su membresía y planes', (await S.call('GET', '/yo/membresia')).status === 200);
+  const planMes = await A.call('POST', `/sedes/${SEDE}/planes`, { nombre: 'Mes', tipo: 'mes', duracionDias: 30, precio: 45000 });
+  check('plan tipo visita → 400 (la visita es un servicio)', (await A.call('POST', `/sedes/${SEDE}/planes`, { nombre: 'Visita', tipo: 'visita', duracionDias: 1, precio: 6000 })).status === 400);
+  await o.Membresia.create({ perfilId: S.yo.id, sedeId: SEDE, planId: planMes.body.id, inicio: new Date(`${menos(0)}T12:00:00Z`), fin: new Date(`${menos(-29)}T12:00:00Z`) });
 
   // ---------- Coaches ----------
   const coachEmail = `coach.f3.${T}@ejemplo.com`;
