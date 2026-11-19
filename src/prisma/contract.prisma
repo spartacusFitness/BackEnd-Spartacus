@@ -111,6 +111,8 @@ model Producto {
   stock        Int                  @default(0)
   /// avisar cuando el stock llegue a este número
   stockMinimo  Int                  @default(0)
+  /// servicio sin inventario (p. ej. Visita de un día): se vende sin descontar stock
+  esServicio   Boolean              @default(false)
   activo       Boolean              @default(true)
   movimientos  MovimientoInventario[]
   enPromociones PromocionProducto[]

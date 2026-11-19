@@ -155,6 +155,9 @@ const PRODUCTOS: [string, Categoria, string, number, number][] = [
   ['Gorra Spartacus', 'ropa', 'gorra', 220, 2],
 ];
 
+/** La visita de un día es un SERVICIO (sin inventario). Precio de muestra de la landing; confirmar por sede. */
+const PRECIO_VISITA: Record<string, number> = { dolores: 60, 'san-felipe': 55, 'san-luis': 50 };
+
 const o = db.orm.public;
 const pedidas = process.argv.slice(2);
 try {
@@ -194,12 +197,16 @@ try {
     }
     const prodYa = new Set(prods.map((p) => norm(p.nombre)));
     const faltanProd = PRODUCTOS.filter(([n]) => !prodYa.has(norm(n)));
+    const faltaVisita = !prodYa.has(norm('Visita (1 día)'));
+    if (faltaVisita) {
+      await o.Producto.create({ sedeId: sede.id, nombre: 'Visita (1 día)', categoria: 'otro', icono: 'visita', precio: (PRECIO_VISITA[sede.id] ?? 60) * 100, stock: 0, stockMinimo: 0, esServicio: true, activo: false });
+    }
     if (faltanProd.length) {
       await o.Producto.createAll(
         faltanProd.map(([nombre, categoria, icono, pesos, stockMinimo]) => ({ sedeId: sede.id, nombre, categoria, icono, precio: pesos * 100, stock: 0, stockMinimo, activo: false })),
       );
     }
-    console.log(`✔ ${sede.nombre}: +${faltanMaq.length} máquinas, +${faltanEj.length} ejercicios, +${faltanProd.length} productos desactivados (ya tenía ${maqs.length}, ${ejs.length} y ${prods.length})`);
+    console.log(`✔ ${sede.nombre}: +${faltanMaq.length} máquinas, +${faltanEj.length} ejercicios, +${faltanProd.length + (faltaVisita ? 1 : 0)} productos desactivados (ya tenía ${maqs.length}, ${ejs.length} y ${prods.length})`);
   }
 } catch (err) {
   console.error('✘', (err as Error).message);

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { BitacoraService } from '../common/bitacora.service.js';
 import { aFecha, diaSemana, hoy, sumarDias, ymd, type Calendario } from '../common/fechas.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -186,6 +186,13 @@ export class CoachService {
       registradoPor: actor.perfilId,
     });
     return { id: m.id, fecha: dia, pesoKg: m.pesoGr / 1000, notas: m.notas };
+  }
+
+  /** Sin membresía vigente el socio no usa la app (rutina, nutrición, avance, tienda): solo ve y paga planes. */
+  async exigirMembresia(perfilId: string, sedeId: string) {
+    if (!(await this.gym.membresiaVigente(perfilId, sedeId))) {
+      throw new ForbiddenException({ message: 'Necesitas una membresía activa para usar esta función.', code: 'sin_membresia' });
+    }
   }
 
   /* ---------------- Nutrición ---------------- */

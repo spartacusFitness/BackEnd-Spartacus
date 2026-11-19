@@ -34,7 +34,8 @@ export const recepcionistaEditarSchema = z
 
 export const planCrearSchema = z.object({
   nombre: texto(2, 60, 'Escribe el nombre del plan.'),
-  tipo: z.enum(['visita', 'semana', 'mes', 'especial']),
+  // La visita NO es un plan: se vende en mostrador como servicio (no registra al socio).
+  tipo: z.enum(['semana', 'mes', 'especial'], { error: 'Las visitas se venden en Venta como servicio, no como plan.' }),
   duracionDias: z.number().int().min(1).max(400),
   precio: centavos,
   descripcion: z.string().trim().max(300).optional(),

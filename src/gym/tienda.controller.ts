@@ -1,9 +1,9 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard.js';
 import { parse } from '../auth/auth.schemas.js';
 import { BitacoraService } from '../common/bitacora.service.js';
 import { aFecha } from '../common/fechas.js';
-import { exigirRolEn, sedesCon } from '../common/permisos.js';
+import { exigirRolEn, sedesCon, tieneRolEn } from '../common/permisos.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { GymService } from './gym.service.js';
 import { imagenSchema, movimientoSchema, productoCrearSchema, productoEditarSchema, promocionCrearSchema, promocionEditarSchema, ventaSchema } from './tienda.schemas.js';
@@ -45,8 +45,8 @@ export class TiendaController {
     await this.gym.sede(id);
     const p = await this.orm.Producto.create({ ...input, sedeId: id, stock: 0 });
     await this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'producto.crear', entidad: 'Producto', entidadId: p.id, datos: { ...input, stockInicial } });
-    if (stockInicial > 0) await this.tienda.movimiento({ perfilId: req.auth.perfilId }, id, p.id, { tipo: 'entrada', cantidad: stockInicial, motivo: 'Inventario inicial' });
-    return { ...p, stock: stockInicial };
+    if (stockInicial > 0 && !input.esServicio) await this.tienda.movimiento({ perfilId: req.auth.perfilId }, id, p.id, { tipo: 'entrada', cantidad: stockInicial, motivo: 'Inventario inicial' });
+    return { ...p, stock: input.esServicio ? 0 : stockInicial };
   }
 
   /** PATCH — precio, nombre, ícono, mínimo, activo. El stock solo cambia con movimientos. */
@@ -153,8 +153,13 @@ export class TiendaController {
   @Get('yo/tienda')
   async catalogo(@Req() req: AuthedRequest) {
     // La sede del socio ya viene en sus roles (caché de sesión): sin consulta extra.
-    const sedeId = req.auth.roles.find((r) => r.rol === 'socio')?.sedeId ?? sedesCon(req.auth, [...STAFF])?.[0];
+    const sedeSocio = req.auth.roles.find((r) => r.rol === 'socio')?.sedeId;
+    const sedeId = sedeSocio ?? sedesCon(req.auth, [...STAFF])?.[0];
     if (!sedeId) return { productos: [], promociones: [], hoy: null };
+    // Un socio sin membresía vigente no ve la tienda (la app queda bloqueada).
+    if (sedeSocio && !tieneRolEn(req.auth, sedeId, [...STAFF]) && !(await this.gym.membresiaVigente(req.auth.perfilId, sedeId))) {
+      throw new ForbiddenException({ message: 'Necesitas una membresía activa para usar esta función.', code: 'sin_membresia' });
+    }
     return this.tienda.catalogo(sedeId);
   }
 }

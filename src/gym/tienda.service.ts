@@ -7,7 +7,7 @@ import type { Actor } from './gym.service.js';
 
 export const ICONOS = [
   'proteina', 'bebida', 'agua', 'cafe', 'barra', 'snack', 'vitaminas', 'creatina',
-  'preentreno', 'toalla', 'guantes', 'shaker', 'playera', 'gorra', 'cinturon', 'otro',
+  'preentreno', 'toalla', 'guantes', 'shaker', 'playera', 'gorra', 'cinturon', 'visita', 'otro',
 ] as const;
 
 type Promo = { activa: boolean; diasSemana: string; desde: Date | null; hasta: Date | null };
@@ -55,6 +55,7 @@ export class TiendaService {
     return this.prisma.db.transaction(async (tx) => {
       const p = await tx.orm.public.Producto.where({ id: productoId }).forUpdate().first();
       if (!p || p.sedeId !== sedeId) throw new NotFoundException('Producto no encontrado en esta sede.');
+      if (p.esServicio) throw new BadRequestException(`"${p.nombre}" es un servicio: no lleva inventario.`);
       const cantidad = mov.tipo === 'entrada' ? mov.cantidad : mov.stockContado - p.stock;
       if (mov.tipo === 'ajuste' && cantidad === 0) throw new BadRequestException('El stock contado es igual al registrado; no hay nada que ajustar.');
       const stock = p.stock + cantidad;
@@ -180,7 +181,7 @@ export class TiendaService {
         const p = productos.get(id);
         if (!p || p.sedeId !== sedeId) throw new NotFoundException('Producto no encontrado en esta sede.');
         if (prodIds.includes(id) && !p.activo) throw new BadRequestException(`"${p.nombre}" está desactivado.`);
-        if (p.stock < salida.get(id)!) throw new ConflictException(`No hay suficiente "${p.nombre}": quedan ${p.stock}.`);
+        if (!p.esServicio && p.stock < salida.get(id)!) throw new ConflictException(`No hay suficiente "${p.nombre}": quedan ${p.stock}.`);
       }
 
       const detalles = input.items.map((it) => {
@@ -203,9 +204,9 @@ export class TiendaService {
       });
       // Detalles y movimientos en lote (1 consulta cada uno); el stock, uno por producto.
       await tx.orm.public.PagoDetalle.createAll(detalles.map((d) => ({ ...d, pagoId: pago.id })));
-      const movs = [...salida].map(([id, cant]) => ({ id, cant, stock: productos.get(id)!.stock - cant }));
+      const movs = [...salida].filter(([id]) => !productos.get(id)!.esServicio).map(([id, cant]) => ({ id, cant, stock: productos.get(id)!.stock - cant }));
       for (const m of movs) await tx.orm.public.Producto.where({ id: m.id }).update({ stock: m.stock });
-      await tx.orm.public.MovimientoInventario.createAll(
+      if (movs.length) await tx.orm.public.MovimientoInventario.createAll(
         movs.map((m) => ({
           productoId: m.id,
           sedeId,
@@ -227,11 +228,11 @@ export class TiendaService {
   /** Catálogo para la app del socio: productos activos y promociones vigentes hoy. */
   async catalogo(sedeId: string) {
     const [productos, promociones] = await Promise.all([
-      this.orm.Producto.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock').orderBy((p) => p.nombre.asc()).all(),
+      this.orm.Producto.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock', 'esServicio').orderBy((p) => p.nombre.asc()).all(),
       this.promociones(sedeId, true),
     ]);
     return {
-      productos: productos.map((p) => ({ ...p, disponible: p.stock > 0, stock: undefined })),
+      productos: productos.map((p) => ({ ...p, disponible: p.esServicio || p.stock > 0, stock: undefined })),
       promociones,
       hoy: hoy(),
     };

@@ -12,6 +12,8 @@ export const productoCrearSchema = z.object({
   precio: centavos,
   stockInicial: z.number().int().min(0).max(100_000).default(0),
   stockMinimo: z.number().int().min(0).max(100_000).default(0),
+  /** servicio sin inventario, p. ej. Visita */
+  esServicio: z.boolean().default(false),
 });
 
 export const productoEditarSchema = productoCrearSchema

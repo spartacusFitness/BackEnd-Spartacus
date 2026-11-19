@@ -76,6 +76,7 @@ export class ReportesService {
         .all(),
       this.orm.Producto.where((p) => p.sedeId.in(ids))
         .where({ activo: true })
+        .where({ esServicio: false })
         .select('id', 'sedeId', 'nombre', 'icono', 'stock', 'stockMinimo')
         .all(),
     ]);

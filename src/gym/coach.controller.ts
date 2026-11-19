@@ -221,15 +221,23 @@ export class CoachController {
     return sedeId;
   }
 
+  /** Sede del socio + membresía vigente (sin ella, la app queda bloqueada salvo planes y pagos). */
+  private async socioActivo(req: AuthedRequest) {
+    const sedeId = this.sedeSocio(req);
+    await this.coach.exigirMembresia(req.auth.perfilId, sedeId);
+    return sedeId;
+  }
+
   /** GET /yo/entrenamiento — su ficha (con salud), racha, avance y rutina. */
   @Get('yo/entrenamiento')
-  miFicha(@Req() req: AuthedRequest) {
-    return this.coach.ficha(req.auth.perfilId, this.sedeSocio(req), true);
+  async miFicha(@Req() req: AuthedRequest) {
+    return this.coach.ficha(req.auth.perfilId, await this.socioActivo(req), true);
   }
 
   /** GET /yo/nutricion — recomendación orientativa (calorías, macros, agua e ideas sin sus alérgenos). */
   @Get('yo/nutricion')
-  miNutricion(@Req() req: AuthedRequest) {
+  async miNutricion(@Req() req: AuthedRequest) {
+    await this.socioActivo(req);
     return this.coach.nutricion(req.auth.perfilId);
   }
 
@@ -243,17 +251,20 @@ export class CoachController {
 
   @Patch('yo/fisico')
   async miFisico(@Req() req: AuthedRequest, @Body() body: unknown) {
+    await this.socioActivo(req);
     await this.coach.actualizarFisico({ perfilId: req.auth.perfilId }, req.auth.perfilId, parse(fisicoSchema, body));
     return { ok: true };
   }
 
   @Put('yo/salud')
-  miSalud(@Req() req: AuthedRequest, @Body() body: unknown) {
+  async miSalud(@Req() req: AuthedRequest, @Body() body: unknown) {
+    await this.socioActivo(req);
     return this.coach.guardarSalud({ perfilId: req.auth.perfilId }, req.auth.perfilId, parse(saludSchema, body));
   }
 
   @Post('yo/mediciones')
-  miMedicion(@Req() req: AuthedRequest, @Body() body: unknown) {
+  async miMedicion(@Req() req: AuthedRequest, @Body() body: unknown) {
+    await this.socioActivo(req);
     return this.coach.registrarMedicion({ perfilId: req.auth.perfilId }, req.auth.perfilId, parse(medicionSchema, body));
   }
 }
