@@ -1,0 +1,397 @@
+// use prisma-8
+//
+// Las cuentas viven en Supabase Auth (auth.users). Aquí: perfiles, roles por sede, dispositivos
+// que firman peticiones y la operación diaria del gym (fase 1).
+// Todas las tablas llevan @@rls sin políticas: solo el backend (service_role) las lee.
+// Dinero: SIEMPRE en centavos (Int). Fechas "de calendario": DateTime a las 12:00 UTC de ese día.
+
+enum Rol {
+  @@type("pg/text@1")
+  admin     = "admin"     // dueños: todas las sedes
+  encargado = "encargado" // administrador de UNA sede
+  recepcion = "recepcion"
+  coach     = "coach"
+  socio     = "socio"
+}
+
+enum TipoPlan {
+  @@type("pg/text@1")
+  visita   = "visita"
+  semana   = "semana"
+  mes      = "mes"
+  especial = "especial"
+}
+
+enum MetodoSolicitud {
+  @@type("pg/text@1")
+  tarjeta   = "tarjeta"
+  mostrador = "mostrador"
+}
+
+enum EstadoSolicitud {
+  @@type("pg/text@1")
+  pendiente_pago = "pendiente_pago" // eligió pagar en el gym
+  pagada         = "pagada"         // pagó en línea, falta presentarse
+  completada     = "completada"
+  vencida        = "vencida"
+  cancelada      = "cancelada"
+}
+
+enum MetodoPago {
+  @@type("pg/text@1")
+  efectivo = "efectivo"
+  terminal = "terminal" // terminal bancaria externa
+  stripe   = "stripe"
+}
+
+enum CategoriaProducto {
+  @@type("pg/text@1")
+  suplementos = "suplementos"
+  bebidas     = "bebidas"
+  snacks      = "snacks"
+  accesorios  = "accesorios"
+  ropa        = "ropa"
+  otro        = "otro"
+}
+
+enum TipoMovimiento {
+  @@type("pg/text@1")
+  venta   = "venta"
+  entrada = "entrada" // llegó mercancía
+  ajuste  = "ajuste"  // merma, conteo físico, corrección
+}
+
+enum ResultadoAsistencia {
+  @@type("pg/text@1")
+  permitida               = "permitida"
+  rechazada_passback      = "rechazada_passback"
+  rechazada_sin_membresia = "rechazada_sin_membresia"
+}
+
+model Sede {
+  /// slug: dolores | san-felipe | san-luis
+  id              String             @id
+  nombre          String
+  ciudad          String
+  direccion       String
+  lat             Float
+  lng             Float
+  mapsUrl         String?
+  /// días de la semana sin servicio, separados por coma (0 = domingo … 6 = sábado)
+  diasSinServicio String             @default("")
+  /// minutos en que el mismo socio no puede volver a entrar
+  antipassbackMin Int                @default(5)
+  activa          Boolean            @default(true)
+  perfiles        Perfil[]
+  roles           RolAsignado[]
+  diasCerrados    DiaCerrado[]
+  recepcionistas  Recepcionista[]
+  turnos          Turno[]
+  planes          Plan[]
+  productos       Producto[]
+  promociones     Promocion[]
+  createdAt       DateTime           @default(now()) @onCreate(now())
+  updatedAt       temporal.UpdatedAt
+
+  @@rls
+}
+
+/// Producto de una sede. El ícono es una clave de un catálogo fijo (no hay fotos de producto).
+model Producto {
+  id           Int                  @id @default(autoincrement())
+  sedeId       String
+  sede         Sede                 @relation(fields: [sedeId], references: [id])
+  nombre       String
+  categoria    CategoriaProducto
+  icono        String
+  precio       Int
+  stock        Int                  @default(0)
+  /// avisar cuando el stock llegue a este número
+  stockMinimo  Int                  @default(0)
+  activo       Boolean              @default(true)
+  movimientos  MovimientoInventario[]
+  enPromociones PromocionProducto[]
+  createdAt    DateTime             @default(now()) @onCreate(now())
+  updatedAt    temporal.UpdatedAt
+
+  @@rls
+}
+
+model MovimientoInventario {
+  id              Int            @id @default(autoincrement())
+  productoId      Int
+  producto        Producto       @relation(fields: [productoId], references: [id])
+  sedeId          String
+  tipo            TipoMovimiento
+  /// positivo entra, negativo sale
+  cantidad        Int
+  stockResultante Int
+  motivo          String?
+  pagoId          Int?
+  actorPerfilId   Uuid?
+  recepcionistaId Int?
+  createdAt       DateTime       @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+/// Paquete de productos a precio especial, por días de la semana y/o rango de fechas.
+model Promocion {
+  id          Int                 @id @default(autoincrement())
+  sedeId      String
+  sede        Sede                @relation(fields: [sedeId], references: [id])
+  nombre      String
+  descripcion String?
+  precio      Int
+  /// días de la semana en que aplica, separados por coma (0 = domingo); vacío = todos
+  diasSemana  String              @default("")
+  desde       DateTime?
+  hasta       DateTime?
+  /// ruta en el bucket "promos" (opcional)
+  imagenPath  String?
+  activa      Boolean             @default(true)
+  productos   PromocionProducto[]
+  createdAt   DateTime            @default(now()) @onCreate(now())
+  updatedAt   temporal.UpdatedAt
+
+  @@rls
+}
+
+model PromocionProducto {
+  id          Int       @id @default(autoincrement())
+  promocionId Int
+  promocion   Promocion @relation(fields: [promocionId], references: [id], onDelete: Cascade)
+  productoId  Int
+  producto    Producto  @relation(fields: [productoId], references: [id])
+  cantidad    Int
+
+  @@unique([promocionId, productoId])
+  @@rls
+}
+
+model DiaCerrado {
+  id        Int      @id @default(autoincrement())
+  sedeId    String
+  sede      Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  fecha     DateTime
+  motivo    String
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@unique([sedeId, fecha])
+  @@rls
+}
+
+model Perfil {
+  id              Uuid                   @id @onCreate(uuid())
+  /// id de la cuenta en Supabase Auth
+  userId          Uuid                   @unique
+  user            supabase:auth.AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email           String
+  nombre          String?
+  /// apodo para la red social
+  apodo           String?
+  fotoUrl         String?
+  fechaNacimiento DateTime?
+  /// sede asignada por cercanía (o donde lo dio de alta recepción)
+  sedeId          String?
+  sede            Sede?                  @relation(fields: [sedeId], references: [id])
+  /// recepción revisó su identificación en persona
+  verificado      Boolean                @default(false)
+  roles           RolAsignado[]
+  dispositivos    Dispositivo[]
+  solicitudes     Solicitud[]
+  membresias      Membresia[]
+  asistencias     Asistencia[]
+  createdAt       DateTime               @default(now()) @onCreate(now())
+  updatedAt       temporal.UpdatedAt
+
+  @@rls
+}
+
+model RolAsignado {
+  id        Int      @id @default(autoincrement())
+  perfilId  Uuid
+  perfil    Perfil   @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  rol       Rol
+  /// null solo para admin (todas las sedes)
+  sedeId    String?
+  sede      Sede?    @relation(fields: [sedeId], references: [id])
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@unique([perfilId, rol, sedeId])
+  @@rls
+}
+
+/// Llave pública con la que un dispositivo firma cada petición, ligada a UNA sesión de Supabase.
+model Dispositivo {
+  /// session_id del JWT de Supabase
+  id         String             @id
+  perfilId   Uuid
+  perfil     Perfil             @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  publicKey  String
+  jkt        String
+  remember   Boolean
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  userAgent  String?
+  createdAt  DateTime           @default(now()) @onCreate(now())
+  updatedAt  temporal.UpdatedAt
+
+  @@rls
+}
+
+/// Persona de recepción. Usa la cuenta compartida de la sede y se identifica con su PIN.
+model Recepcionista {
+  id              Int                @id @default(autoincrement())
+  sedeId          String
+  sede            Sede               @relation(fields: [sedeId], references: [id])
+  nombre          String
+  pinHash         String
+  activo          Boolean            @default(true)
+  intentosFallidos Int               @default(0)
+  bloqueadoHasta  DateTime?
+  turnos          Turno[]
+  createdAt       DateTime           @default(now()) @onCreate(now())
+  updatedAt       temporal.UpdatedAt
+
+  @@rls
+}
+
+model Turno {
+  id                Int           @id @default(autoincrement())
+  sedeId            String
+  sede              Sede          @relation(fields: [sedeId], references: [id])
+  recepcionistaId   Int
+  recepcionista     Recepcionista @relation(fields: [recepcionistaId], references: [id])
+  abiertoEn         DateTime      @default(now()) @onCreate(now())
+  cerradoEn         DateTime?
+  efectivoInicial   Int
+  efectivoEsperado  Int?
+  efectivoContado   Int?
+  diferencia        Int?
+  notas             String?
+  pagos             Pago[]
+
+  @@rls
+}
+
+model Plan {
+  id                 Int                @id @default(autoincrement())
+  sedeId             String
+  sede               Sede               @relation(fields: [sedeId], references: [id])
+  nombre             String
+  tipo               TipoPlan
+  duracionDias       Int
+  precio             Int
+  descripcion        String?
+  /// se puede contratar desde la app
+  pagoEnLinea        Boolean            @default(true)
+  /// recepción debe revisar credencial o documento (estudiante, convenio)
+  requiereValidacion Boolean            @default(false)
+  /// se puede renovar desde la app con tarjeta
+  renovableEnLinea   Boolean            @default(true)
+  activo             Boolean            @default(true)
+  solicitudes        Solicitud[]
+  membresias         Membresia[]
+  createdAt          DateTime           @default(now()) @onCreate(now())
+  updatedAt          temporal.UpdatedAt
+
+  @@rls
+}
+
+/// Registro hecho en línea que se completa en recepción.
+model Solicitud {
+  id         Int                @id @default(autoincrement())
+  perfilId   Uuid
+  perfil     Perfil             @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  sedeId     String
+  planId     Int
+  plan       Plan               @relation(fields: [planId], references: [id])
+  metodo     MetodoSolicitud
+  estado     EstadoSolicitud
+  venceEn    DateTime
+  pagoId     Int?
+  createdAt  DateTime           @default(now()) @onCreate(now())
+  updatedAt  temporal.UpdatedAt
+
+  @@rls
+}
+
+model Membresia {
+  id        Int       @id @default(autoincrement())
+  perfilId  Uuid
+  perfil    Perfil    @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  sedeId    String
+  planId    Int
+  plan      Plan      @relation(fields: [planId], references: [id])
+  /// primer día (12:00 UTC de ese día)
+  inicio    DateTime
+  /// último día válido, ya con días de gracia
+  fin       DateTime
+  pagoId    Int?
+  canceladaEn DateTime?
+  createdAt DateTime  @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+model Pago {
+  id        Int           @id @default(autoincrement())
+  sedeId    String
+  turnoId   Int?
+  turno     Turno?        @relation(fields: [turnoId], references: [id])
+  perfilId  Uuid?
+  metodo    MetodoPago
+  total     Int
+  /// quién registró el pago (perfil de la cuenta que hizo la petición)
+  registradoPor Uuid?
+  detalles  PagoDetalle[]
+  createdAt DateTime      @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+model PagoDetalle {
+  id             Int    @id @default(autoincrement())
+  pagoId         Int
+  pago           Pago   @relation(fields: [pagoId], references: [id], onDelete: Cascade)
+  /// membresia | producto | promocion
+  tipo           String
+  refId          String
+  descripcion    String
+  cantidad       Int
+  precioUnitario Int
+
+  @@rls
+}
+
+model Asistencia {
+  id        Int                 @id @default(autoincrement())
+  perfilId  Uuid
+  perfil    Perfil              @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  sedeId    String
+  /// facial | recepcion
+  origen    String
+  resultado ResultadoAsistencia
+  turnoId   Int?
+  createdAt DateTime            @default(now()) @onCreate(now())
+
+  @@rls
+}
+
+/// Quién hizo qué. Nunca se edita ni se borra.
+model Bitacora {
+  id              Int      @id @default(autoincrement())
+  sedeId          String?
+  actorPerfilId   Uuid?
+  recepcionistaId Int?
+  accion          String
+  entidad         String
+  entidadId       String
+  /// JSON con el detalle (antes/después)
+  datos           String?
+  createdAt       DateTime @default(now()) @onCreate(now())
+
+  @@rls
+}
