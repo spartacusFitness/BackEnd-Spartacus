@@ -6,6 +6,7 @@ import { hashSecret, verifySecret } from '../common/hash.js';
 import { crearUsuario, cambiarContrasena, enviarCorreoContrasena, SupabaseAdminError } from '../common/supabase-admin.js';
 import { config } from '../config.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { authCache } from '../auth/auth-cache.js';
 
 const PIN_MAX_INTENTOS = 5;
 const PIN_BLOQUEO_MS = 15 * 60 * 1000;
@@ -13,6 +14,8 @@ const PIN_BLOQUEO_MS = 15 * 60 * 1000;
 const DIAS_SOLICITUD_MOSTRADOR = 3;
 /** Si pagó en línea, la solicitud vive lo mismo que su mes. */
 const DIAS_SOLICITUD_TARJETA = 30;
+
+type SedeFila = NonNullable<Awaited<ReturnType<PrismaService['db']['orm']['public']['Sede']['first']>>>;
 
 export interface Actor {
   perfilId: string;
@@ -32,20 +35,46 @@ export class GymService {
 
   /* ---------------- Sedes y calendario ---------------- */
 
-  async sede(sedeId: string) {
-    const s = await this.orm.Sede.first({ id: sedeId });
-    if (!s) throw new NotFoundException('No existe esa sede.');
-    return s;
+  /*
+   * Sede y calendario casi nunca cambian y se leen en casi cada acción: se guardan 60 s en memoria.
+   * Al editar una sede o sus días cerrados, AdminController llama a invalidarSede().
+   */
+  private readonly cacheSede = new Map<string, { hasta: number; sede: Promise<SedeFila>; cal?: Promise<Calendario> }>();
+
+  invalidarSede(sedeId: string) {
+    this.cacheSede.delete(sedeId);
   }
 
-  async calendario(sedeId: string) {
-    const s = await this.sede(sedeId);
-    const desde = aFecha(sumarDias(hoy(), -400));
-    const cerrados = await this.orm.DiaCerrado.where({ sedeId })
-      .where((d) => d.fecha.gte(desde))
-      .select('fecha')
-      .all();
-    return new Calendario(s.diasSinServicio, cerrados.map((d) => ymd(d.fecha)));
+  private entradaSede(sedeId: string) {
+    let e = this.cacheSede.get(sedeId);
+    if (!e || e.hasta < Date.now()) {
+      const sede = this.orm.Sede.first({ id: sedeId }).then((s) => {
+        if (!s) throw new NotFoundException('No existe esa sede.');
+        return s;
+      });
+      e = { hasta: Date.now() + 60_000, sede };
+      this.cacheSede.set(sedeId, e);
+      sede.catch(() => this.cacheSede.delete(sedeId));
+    }
+    return e;
+  }
+
+  sede(sedeId: string) {
+    return this.entradaSede(sedeId).sede;
+  }
+
+  calendario(sedeId: string) {
+    const e = this.entradaSede(sedeId);
+    e.cal ??= (async () => {
+      const desde = aFecha(sumarDias(hoy(), -400));
+      const [s, cerrados] = await Promise.all([
+        e.sede,
+        this.orm.DiaCerrado.where({ sedeId }).where((d) => d.fecha.gte(desde)).select('fecha').all(),
+      ]);
+      return new Calendario(s.diasSinServicio, cerrados.map((d) => ymd(d.fecha)));
+    })();
+    e.cal.catch(() => this.cacheSede.delete(sedeId));
+    return e.cal;
   }
 
   /* ---------------- Membresías ---------------- */
@@ -67,8 +96,7 @@ export class GymService {
    * siguiente día abierto (días de gracia).
    */
   async periodo(perfilId: string, sedeId: string, duracionDias: number) {
-    const cal = await this.calendario(sedeId);
-    const vigente = await this.membresiaVigente(perfilId, sedeId);
+    const [cal, vigente] = await Promise.all([this.calendario(sedeId), this.membresiaVigente(perfilId, sedeId)]);
     const inicio = vigente ? sumarDias(ymd(vigente.fin), 1) : hoy();
     const fin = cal.siguienteAbierto(sumarDias(inicio, Math.max(1, duracionDias) - 1));
     return { inicio, fin };
@@ -83,19 +111,20 @@ export class GymService {
   }
 
   async crearSolicitud(perfilId: string, planId: number, metodo: 'mostrador' | 'tarjeta') {
-    const perfil = await this.orm.Perfil.first({ id: perfilId });
+    const [perfil, plan] = await Promise.all([this.orm.Perfil.first({ id: perfilId }), this.orm.Plan.first({ id: planId })]);
     if (!perfil?.sedeId) throw new BadRequestException('Primero detecta tu sede.');
-    const plan = await this.orm.Plan.first({ id: planId });
     if (!plan || plan.sedeId !== perfil.sedeId || !plan.activo) throw new NotFoundException('Ese plan no está disponible en tu sede.');
     if (metodo === 'tarjeta') {
       if (!plan.pagoEnLinea) throw new BadRequestException('Este plan se paga en recepción.');
       throw new BadRequestException('El pago con tarjeta en línea llega muy pronto. Por ahora elige pagar en el gym.');
     }
-    await this.vencerSolicitudes(perfil.sedeId);
-    const abierta = await this.orm.Solicitud.where({ perfilId, estado: 'pendiente_pago' }).first();
+    const sedeSol = perfil.sedeId;
+    const [abierta, cal] = await Promise.all([
+      this.vencerSolicitudes(sedeSol).then(() => this.orm.Solicitud.where({ perfilId, estado: 'pendiente_pago' }).first()),
+      this.calendario(sedeSol),
+    ]);
     if (abierta) throw new ConflictException('Ya tienes una solicitud pendiente. Preséntate en recepción para completarla.');
 
-    const cal = await this.calendario(perfil.sedeId);
     const venceEn =
       metodo === 'mostrador'
         ? finDelDia(cal.diasHabilesDespues(hoy(), DIAS_SOLICITUD_MOSTRADOR))
@@ -158,6 +187,7 @@ export class GymService {
       const user = await crearUsuario(email, contrasena, `Recepción ${sede.nombre}`);
       const p = await this.orm.Perfil.create({ userId: user.id, email, nombre: `Recepción ${sede.nombre}`, sedeId, verificado: true });
       await this.orm.RolAsignado.create({ perfilId: p.id, rol: 'recepcion', sedeId });
+      authCache.invalidarPerfil(p.id);
     }
     await this.bitacora.registrar({ sedeId, actorPerfilId: actor.perfilId, accion: perfil ? 'recepcion.restablecer' : 'recepcion.crear', entidad: 'CuentaRecepcion', entidadId: sedeId });
     return { usuario, contrasena, nueva: !perfil };
@@ -170,8 +200,7 @@ export class GymService {
   }
 
   async abrirTurno(actor: Actor, sedeId: string, recepcionistaId: number, pin: string, efectivoInicial: number) {
-    const r = await this.verificarPin(sedeId, recepcionistaId, pin);
-    const abierto = await this.turnoAbierto(sedeId);
+    const [r, abierto] = await Promise.all([this.verificarPin(sedeId, recepcionistaId, pin), this.turnoAbierto(sedeId)]);
     if (abierto) throw new ConflictException('Ya hay un turno abierto en esta sede. Ciérralo primero.');
     const t = await this.orm.Turno.create({ sedeId, recepcionistaId: r.id, efectivoInicial });
     await this.bitacora.registrar({ sedeId, actorPerfilId: actor.perfilId, recepcionistaId: r.id, accion: 'turno.abrir', entidad: 'Turno', entidadId: t.id, datos: { efectivoInicial } });
@@ -187,8 +216,7 @@ export class GymService {
   async cerrarTurno(actor: Actor, sedeId: string, pin: string, efectivoContado: number, notas?: string) {
     const t = await this.turnoAbierto(sedeId);
     if (!t) throw new BadRequestException('No hay turno abierto.');
-    await this.verificarPin(sedeId, t.recepcionistaId, pin);
-    const { efectivo } = await this.resumenTurno(t.id);
+    const [, { efectivo }] = await Promise.all([this.verificarPin(sedeId, t.recepcionistaId, pin), this.resumenTurno(t.id)]);
     const esperado = t.efectivoInicial + efectivo;
     const cerrado = await this.orm.Turno.where({ id: t.id }).update({
       cerradoEn: new Date(),
@@ -211,8 +239,8 @@ export class GymService {
 
   /** Alta en recepción: crea la cuenta (confirmada, porque se verificó en persona) y la deja como socia de la sede. */
   async altaSocio(actor: Actor, sedeId: string, nombre: string, email: string, fechaNacimiento?: string) {
-    await this.exigirTurno(sedeId);
-    let perfil = await this.orm.Perfil.where({ email }).first();
+    const [, existente] = await Promise.all([this.exigirTurno(sedeId), this.orm.Perfil.where({ email }).first()]);
+    let perfil = existente;
     if (!perfil) {
       let userId: string;
       try {
@@ -237,6 +265,7 @@ export class GymService {
     }
     await this.orm.RolAsignado.where({ perfilId: perfil.id, rol: 'socio' }).deleteAll();
     await this.orm.RolAsignado.create({ perfilId: perfil.id, rol: 'socio', sedeId });
+    authCache.invalidarPerfil(perfil.id);
     const correoEnviado = await enviarCorreoContrasena(email, `${config.frontendUrls[0]}/restablecer`);
     await this.bitacora.registrar({ sedeId, actorPerfilId: actor.perfilId, accion: 'socio.alta', entidad: 'Perfil', entidadId: perfil.id, datos: { email } });
     return { perfil, correoEnviado };
@@ -249,19 +278,21 @@ export class GymService {
     sedeId: string,
     input: { perfilId: string; planId: number; metodo: 'efectivo' | 'terminal'; solicitudId?: number; credencialValidada?: boolean },
   ) {
-    const turno = await this.exigirTurno(sedeId);
-    const perfil = await this.orm.Perfil.first({ id: input.perfilId });
+    const solicitudId = input.solicitudId;
+    const [turno, perfil, plan, solicitudLeida] = await Promise.all([
+      this.exigirTurno(sedeId),
+      this.orm.Perfil.first({ id: input.perfilId }),
+      this.orm.Plan.first({ id: input.planId }),
+      solicitudId ? this.vencerSolicitudes(sedeId).then(() => this.orm.Solicitud.first({ id: solicitudId })) : Promise.resolve(null),
+    ]);
     if (!perfil || perfil.sedeId !== sedeId) throw new NotFoundException('Esa persona no es socia de esta sede.');
-    const plan = await this.orm.Plan.first({ id: input.planId });
     if (!plan || plan.sedeId !== sedeId || !plan.activo) throw new NotFoundException('Ese plan no está disponible en esta sede.');
     if (plan.requiereValidacion && !input.credencialValidada) {
       throw new BadRequestException(`El plan "${plan.nombre}" requiere revisar la credencial o documento. Márcalo como revisado.`);
     }
 
-    let solicitud = null;
-    if (input.solicitudId) {
-      await this.vencerSolicitudes(sedeId);
-      solicitud = await this.orm.Solicitud.first({ id: input.solicitudId });
+    const solicitud = solicitudLeida;
+    if (solicitudId) {
       if (!solicitud || solicitud.perfilId !== perfil.id || solicitud.sedeId !== sedeId) throw new NotFoundException('Solicitud no encontrada.');
       if (solicitud.estado !== 'pendiente_pago') throw new BadRequestException(`La solicitud está ${solicitud.estado.replace('_', ' ')}.`);
     }
@@ -313,22 +344,21 @@ export class GymService {
 
   /** Registra una entrada. Rechaza sin membresía vigente o si volvió a entrar dentro del anti-passback. */
   async registrarAsistencia(actor: Actor | null, sedeId: string, perfilId: string, origen: 'recepcion' | 'facial') {
-    const sede = await this.sede(sedeId);
-    const perfil = await this.orm.Perfil.first({ id: perfilId });
+    const sede = await this.sede(sedeId); // en caché: casi siempre sin viaje a la base
+    const desde = new Date(Date.now() - sede.antipassbackMin * 60 * 1000);
+    const [perfil, turno, vigente, reciente] = await Promise.all([
+      this.orm.Perfil.where({ id: perfilId }).select('id').first(),
+      this.turnoAbierto(sedeId),
+      this.membresiaVigente(perfilId, sedeId),
+      this.orm.Asistencia.where({ perfilId, sedeId, resultado: 'permitida' }).where((a) => a.createdAt.gte(desde)).select('id').first(),
+    ]);
     if (!perfil) throw new NotFoundException('Socio no encontrado.');
-    const turno = await this.turnoAbierto(sedeId);
 
-    let resultado: 'permitida' | 'rechazada_passback' | 'rechazada_sin_membresia' = 'permitida';
-    const vigente = await this.membresiaVigente(perfilId, sedeId);
-    if (!vigente) {
-      resultado = 'rechazada_sin_membresia';
-    } else {
-      const desde = new Date(Date.now() - sede.antipassbackMin * 60 * 1000);
-      const reciente = await this.orm.Asistencia.where({ perfilId, sedeId, resultado: 'permitida' })
-        .where((a) => a.createdAt.gte(desde))
-        .first();
-      if (reciente) resultado = 'rechazada_passback';
-    }
+    const resultado: 'permitida' | 'rechazada_passback' | 'rechazada_sin_membresia' = !vigente
+      ? 'rechazada_sin_membresia'
+      : reciente
+        ? 'rechazada_passback'
+        : 'permitida';
 
     const a = await this.orm.Asistencia.create({ perfilId, sedeId, origen, resultado, turnoId: turno?.id ?? null });
     if (resultado !== 'permitida') {

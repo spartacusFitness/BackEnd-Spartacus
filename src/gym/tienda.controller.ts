@@ -140,8 +140,10 @@ export class TiendaController {
   async vender(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string, @Body() body: unknown) {
     exigirRolEn(req.auth, sedeId, [...STAFF]);
     const input = parse(ventaSchema, body);
-    const turno = await this.gym.turnoAbierto(sedeId);
-    if (!turno) throw new BadRequestException('Abre tu turno con tu PIN antes de vender.');
+    const turno = this.gym.turnoAbierto(sedeId).then((t) => {
+      if (!t) throw new BadRequestException('Abre tu turno con tu PIN antes de vender.');
+      return t;
+    });
     return this.tienda.vender({ perfilId: req.auth.perfilId }, sedeId, turno, input);
   }
 
@@ -150,8 +152,8 @@ export class TiendaController {
   /** GET /yo/tienda — productos y promociones de hoy en su sede (se pagan en mostrador). */
   @Get('yo/tienda')
   async catalogo(@Req() req: AuthedRequest) {
-    const perfil = await this.orm.Perfil.first({ id: req.auth.perfilId });
-    const sedeId = perfil?.sedeId ?? sedesCon(req.auth, [...STAFF])?.[0];
+    // La sede del socio ya viene en sus roles (caché de sesión): sin consulta extra.
+    const sedeId = req.auth.roles.find((r) => r.rol === 'socio')?.sedeId ?? sedesCon(req.auth, [...STAFF])?.[0];
     if (!sedeId) return { productos: [], promociones: [], hoy: null };
     return this.tienda.catalogo(sedeId);
   }

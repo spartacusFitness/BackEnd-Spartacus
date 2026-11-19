@@ -73,6 +73,7 @@ export class AdminController {
       ...rest,
       ...(diasSinServicio ? { diasSinServicio: [...new Set(diasSinServicio)].sort().join(',') } : {}),
     });
+    this.gym.invalidarSede(id);
     await this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'sede.editar', entidad: 'Sede', entidadId: id, datos: { antes, cambios: input } });
     return sede;
   }
@@ -93,6 +94,7 @@ export class AdminController {
     await this.gym.sede(id);
     if (await this.orm.DiaCerrado.where({ sedeId: id, fecha: aFecha(fecha) }).first()) throw new ConflictException('Ese día ya está marcado como cerrado.');
     const d = await this.orm.DiaCerrado.create({ sedeId: id, fecha: aFecha(fecha), motivo });
+    this.gym.invalidarSede(id);
     await this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'dia_cerrado.crear', entidad: 'DiaCerrado', entidadId: d.id, datos: { fecha, motivo } });
     return { id: d.id, fecha, motivo };
   }
@@ -104,6 +106,7 @@ export class AdminController {
     const d = await this.orm.DiaCerrado.first({ id: diaId });
     if (!d || d.sedeId !== id) throw new NotFoundException('Día no encontrado.');
     await this.orm.DiaCerrado.where({ id: diaId }).delete();
+    this.gym.invalidarSede(id);
     await this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'dia_cerrado.quitar', entidad: 'DiaCerrado', entidadId: diaId, datos: { fecha: ymd(d.fecha) } });
   }
 

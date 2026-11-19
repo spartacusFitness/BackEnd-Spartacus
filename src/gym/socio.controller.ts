@@ -19,16 +19,19 @@ export class SocioController {
   @Get('membresia')
   async membresia(@Req() req: AuthedRequest) {
     const orm = this.prisma.db.orm.public;
-    const perfil = await orm.Perfil.first({ id: req.auth.perfilId });
-    if (!perfil?.sedeId) return { sedeId: null, vigente: null, solicitudes: [] };
-    await this.gym.vencerSolicitudes(perfil.sedeId);
-    const vigente = await this.gym.membresiaVigente(perfil.id, perfil.sedeId);
-    const plan = vigente ? await orm.Plan.first({ id: vigente.planId }) : null;
-    const solicitudes = await orm.Solicitud.where({ perfilId: perfil.id }).orderBy((s) => s.id.desc()).limit(5).all();
-    const planes = new Map((await orm.Plan.where({ sedeId: perfil.sedeId }).select('id', 'nombre', 'precio').all()).map((p) => [p.id, p]));
+    const perfilId = req.auth.perfilId;
+    // La sede del socio viene en sus roles (caché de sesión).
+    const sedeId = req.auth.roles.find((r) => r.rol === 'socio')?.sedeId;
+    if (!sedeId) return { sedeId: null, vigente: null, solicitudes: [] };
+    const [vigente, solicitudes, planesFilas] = await Promise.all([
+      this.gym.membresiaVigente(perfilId, sedeId),
+      this.gym.vencerSolicitudes(sedeId).then(() => orm.Solicitud.where({ perfilId }).orderBy((s) => s.id.desc()).limit(5).all()),
+      orm.Plan.select('id', 'nombre', 'precio').all(), // incluye el plan de la membresía aunque sea de otra sede
+    ]);
+    const planes = new Map(planesFilas.map((p) => [p.id, p]));
     return {
-      sedeId: perfil.sedeId,
-      vigente: vigente ? { plan: plan?.nombre ?? '', inicio: ymd(vigente.inicio), fin: ymd(vigente.fin) } : null,
+      sedeId,
+      vigente: vigente ? { plan: planes.get(vigente.planId)?.nombre ?? '', inicio: ymd(vigente.inicio), fin: ymd(vigente.fin) } : null,
       solicitudes: solicitudes.map((s) => ({
         id: s.id,
         plan: planes.get(s.planId)?.nombre ?? '',

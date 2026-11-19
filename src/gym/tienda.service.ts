@@ -94,14 +94,15 @@ export class TiendaService {
 
   /** Promociones con sus productos; `soloVigentes` = las que aplican hoy. */
   async promociones(sedeId: string, soloVigentes: boolean) {
-    const promos = await this.orm.Promocion.where({ sedeId }).orderBy((p) => p.id.desc()).all();
+    // Los productos de una promoción son siempre de su sede: se piden en paralelo con las promos.
+    const [promos, prodsSede] = await Promise.all([
+      this.orm.Promocion.where({ sedeId }).orderBy((p) => p.id.desc()).all(),
+      this.orm.Producto.where({ sedeId }).select('id', 'nombre', 'icono', 'precio', 'stock').all(),
+    ]);
     const lista = soloVigentes ? promos.filter((p) => promoVigente(p)) : promos;
     if (!lista.length) return [];
     const items = await this.orm.PromocionProducto.where((pp) => pp.promocionId.in(lista.map((p) => p.id))).all();
-    const prodIds = [...new Set(items.map((i) => i.productoId))];
-    const prods = new Map(
-      (prodIds.length ? await this.orm.Producto.where((p) => p.id.in(prodIds)).select('id', 'nombre', 'icono', 'precio', 'stock').all() : []).map((p) => [p.id, p]),
-    );
+    const prods = new Map(prodsSede.map((p) => [p.id, p]));
     return lista.map((p) => ({
       id: p.id,
       nombre: p.nombre,
@@ -141,22 +142,26 @@ export class TiendaService {
 
   /* ---------------- Venta en mostrador ---------------- */
 
-  async vender(actor: Actor, sedeId: string, turno: { id: number; recepcionistaId: number }, input: { items: ItemVenta[]; metodo: 'efectivo' | 'terminal'; perfilId?: string }) {
+  /** `turnoP` llega como promesa para buscar el turno en paralelo con lo demás. */
+  async vender(actor: Actor, sedeId: string, turnoP: Promise<{ id: number; recepcionistaId: number }>, input: { items: ItemVenta[]; metodo: 'efectivo' | 'terminal'; perfilId?: string }) {
+    turnoP.catch(() => undefined); // se maneja abajo; evita "rechazo no manejado" si fallamos antes
     if (!input.items.length) throw new BadRequestException('Agrega al menos un producto.');
     const prodIds = [...new Set(input.items.filter((i) => i.tipo === 'producto').map((i) => i.id))];
     const promoIds = [...new Set(input.items.filter((i) => i.tipo === 'promocion').map((i) => i.id))];
 
-    const promos = promoIds.length ? await this.orm.Promocion.where((p) => p.id.in(promoIds)).all() : [];
-    const promoItems = promoIds.length ? await this.orm.PromocionProducto.where((pp) => pp.promocionId.in(promoIds)).all() : [];
+    const perfilId = input.perfilId;
+    const [turno, promos, promoItems, perfil] = await Promise.all([
+      turnoP,
+      promoIds.length ? this.orm.Promocion.where((p) => p.id.in(promoIds)).all() : Promise.resolve([]),
+      promoIds.length ? this.orm.PromocionProducto.where((pp) => pp.promocionId.in(promoIds)).all() : Promise.resolve([]),
+      perfilId ? this.orm.Perfil.where({ id: perfilId }).select('id', 'sedeId').first() : Promise.resolve(null),
+    ]);
     for (const id of promoIds) {
       const p = promos.find((x) => x.id === id);
       if (!p || p.sedeId !== sedeId) throw new NotFoundException('Promoción no encontrada en esta sede.');
       if (!promoVigente(p)) throw new BadRequestException(`La promoción "${p.nombre}" no aplica hoy.`);
     }
-    if (input.perfilId) {
-      const perfil = await this.orm.Perfil.first({ id: input.perfilId });
-      if (!perfil || perfil.sedeId !== sedeId) throw new NotFoundException('Socio no encontrado en esta sede.');
-    }
+    if (perfilId && (!perfil || perfil.sedeId !== sedeId)) throw new NotFoundException('Socio no encontrado en esta sede.');
 
     // Cuánto sale de cada producto (sueltos + los que vienen dentro de promociones).
     const salida = new Map<number, number>();
@@ -167,13 +172,15 @@ export class TiendaService {
 
     const resultado = await this.prisma.db.transaction(async (tx) => {
       // Bloquea las filas para que dos cajas no vendan el mismo último producto.
-      const productos = new Map<number, { id: number; nombre: string; precio: number; stock: number; activo: boolean; sedeId: string }>();
-      for (const id of [...salida.keys()].sort((a, b) => a - b)) {
-        const p = await tx.orm.public.Producto.where({ id }).forUpdate().first();
+      // Una sola consulta bloquea todos los productos (en orden de id, para no cruzarse con otra caja).
+      const ids = [...salida.keys()];
+      const filas = await tx.orm.public.Producto.where((p) => p.id.in(ids)).orderBy((p) => p.id.asc()).forUpdate().all();
+      const productos = new Map(filas.map((p) => [p.id, p]));
+      for (const id of ids) {
+        const p = productos.get(id);
         if (!p || p.sedeId !== sedeId) throw new NotFoundException('Producto no encontrado en esta sede.');
         if (prodIds.includes(id) && !p.activo) throw new BadRequestException(`"${p.nombre}" está desactivado.`);
         if (p.stock < salida.get(id)!) throw new ConflictException(`No hay suficiente "${p.nombre}": quedan ${p.stock}.`);
-        productos.set(id, p);
       }
 
       const detalles = input.items.map((it) => {
@@ -194,22 +201,22 @@ export class TiendaService {
         total,
         registradoPor: actor.perfilId,
       });
-      for (const d of detalles) await tx.orm.public.PagoDetalle.create({ ...d, pagoId: pago.id });
-      for (const [id, cant] of salida) {
-        const p = productos.get(id)!;
-        const stock = p.stock - cant;
-        await tx.orm.public.Producto.where({ id }).update({ stock });
-        await tx.orm.public.MovimientoInventario.create({
-          productoId: id,
+      // Detalles y movimientos en lote (1 consulta cada uno); el stock, uno por producto.
+      await tx.orm.public.PagoDetalle.createAll(detalles.map((d) => ({ ...d, pagoId: pago.id })));
+      const movs = [...salida].map(([id, cant]) => ({ id, cant, stock: productos.get(id)!.stock - cant }));
+      for (const m of movs) await tx.orm.public.Producto.where({ id: m.id }).update({ stock: m.stock });
+      await tx.orm.public.MovimientoInventario.createAll(
+        movs.map((m) => ({
+          productoId: m.id,
           sedeId,
           tipo: 'venta',
-          cantidad: -cant,
-          stockResultante: stock,
+          cantidad: -m.cant,
+          stockResultante: m.stock,
           pagoId: pago.id,
           actorPerfilId: actor.perfilId,
           recepcionistaId: turno.recepcionistaId,
-        });
-      }
+        })),
+      );
       return { pagoId: pago.id, total, detalles };
     });
 
@@ -219,13 +226,13 @@ export class TiendaService {
 
   /** Catálogo para la app del socio: productos activos y promociones vigentes hoy. */
   async catalogo(sedeId: string) {
-    const productos = await this.orm.Producto.where({ sedeId, activo: true })
-      .select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock')
-      .orderBy((p) => p.nombre.asc())
-      .all();
+    const [productos, promociones] = await Promise.all([
+      this.orm.Producto.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock').orderBy((p) => p.nombre.asc()).all(),
+      this.promociones(sedeId, true),
+    ]);
     return {
       productos: productos.map((p) => ({ ...p, disponible: p.stock > 0, stock: undefined })),
-      promociones: await this.promociones(sedeId, true),
+      promociones,
       hoy: hoy(),
     };
   }

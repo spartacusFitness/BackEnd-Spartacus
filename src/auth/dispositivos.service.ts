@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { authCache } from './auth-cache.js';
 import { publicJwkSchema, thumbprint, type PublicJwk } from './signature.js';
 
 /** "Recordarme": 30 días. Sin él: 12 horas fijas. */
@@ -11,6 +12,8 @@ export interface DispositivoActivo {
   perfilId: string;
   publicKey: PublicJwk;
   remember: boolean;
+  /** ms epoch */
+  expiresAt: number;
 }
 
 const fuera = (code: string, message = 'Tu sesión terminó en este dispositivo. Inicia sesión de nuevo.') =>
@@ -56,18 +59,23 @@ export class DispositivosService {
     if (row.revokedAt) throw fuera('device_revoked');
     if (row.expiresAt.getTime() < Date.now()) throw fuera('device_expired');
     // Renovación deslizante de "Recordarme", como mucho una escritura por hora.
+    let expiresAt = row.expiresAt.getTime();
     if (row.remember && (!row.lastUsedAt || Date.now() - row.lastUsedAt.getTime() > 60 * 60 * 1000)) {
-      await this.rows.where({ id: sessionId }).update({ lastUsedAt: new Date(), expiresAt: new Date(Date.now() + REMEMBER_MS) });
+      expiresAt = Date.now() + REMEMBER_MS;
+      // No hace falta esperar esta escritura para responder.
+      void this.rows.where({ id: sessionId }).update({ lastUsedAt: new Date(), expiresAt: new Date(expiresAt) }).catch(() => undefined);
     }
     return {
       id: row.id,
       perfilId: row.perfilId,
       publicKey: publicJwkSchema.parse(JSON.parse(row.publicKey)),
       remember: row.remember,
+      expiresAt,
     };
   }
 
   async revocar(sessionId: string) {
+    authCache.invalidarSesion(sessionId);
     await this.rows.where({ id: sessionId }).update({ revokedAt: new Date() });
   }
 }

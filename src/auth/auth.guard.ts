@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { authCache, type Contexto } from './auth-cache.js';
 import { DispositivosService } from './dispositivos.service.js';
 import { PerfilesService, type RolNombre } from './perfiles.service.js';
 import { ROLES_KEY } from './roles.decorator.js';
@@ -34,14 +35,11 @@ export class AuthGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>();
     const claims = await verifySupabaseToken(bearer(req.header('authorization')));
 
-    const dispositivo = await this.dispositivos.activo(claims.sessionId);
-    const perfil = await this.perfiles.ensure(claims);
-    if (dispositivo.perfilId !== perfil.id) {
-      throw new UnauthorizedException({ message: 'Token inválido.', code: 'token_invalid' });
-    }
+    let ctxSesion = authCache.get(claims.sessionId);
+    if (!ctxSesion || ctxSesion.userId !== claims.userId) ctxSesion = await this.cargar(claims);
+    const { dispositivo, perfilId, roles } = ctxSesion;
     verifyRequestSignature(req, dispositivo.publicKey);
 
-    const roles = await this.perfiles.roles(perfil.id);
     const required = this.reflector.getAllAndOverride<RolNombre[] | undefined>(ROLES_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
@@ -50,7 +48,18 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException('No tienes permiso para hacer esto.');
     }
 
-    req.auth = { userId: claims.userId, perfilId: perfil.id, sessionId: claims.sessionId, roles };
+    req.auth = { userId: claims.userId, perfilId, sessionId: claims.sessionId, roles };
     return true;
+  }
+
+  /** Dispositivo y perfil en paralelo; luego los roles. Solo cuando no está en caché. */
+  private async cargar(claims: Awaited<ReturnType<typeof verifySupabaseToken>>): Promise<Contexto> {
+    const [dispositivo, perfil] = await Promise.all([this.dispositivos.activo(claims.sessionId), this.perfiles.ensure(claims)]);
+    if (dispositivo.perfilId !== perfil.id) {
+      throw new UnauthorizedException({ message: 'Token inválido.', code: 'token_invalid' });
+    }
+    const ctx: Contexto = { userId: claims.userId, dispositivo, perfilId: perfil.id, roles: await this.perfiles.roles(perfil.id) };
+    authCache.set(claims.sessionId, ctx);
+    return ctx;
   }
 }

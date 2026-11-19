@@ -17,7 +17,22 @@ export class BitacoraService {
   private readonly log = new Logger('Bitacora');
   constructor(private readonly prisma: PrismaService) {}
 
-  async registrar(e: EntradaBitacora) {
+  /**
+   * No bloquea: la respuesta no espera a que se escriba el registro (ahorra un viaje a la base).
+   * Los errores quedan en el log. `pendientes()` sirve para esperar en pruebas o al apagar.
+   */
+  registrar(e: EntradaBitacora): Promise<void> {
+    const p: Promise<void> = this.escribir(e).finally(() => this.enVuelo.delete(p));
+    this.enVuelo.add(p);
+    return Promise.resolve();
+  }
+
+  private readonly enVuelo = new Set<Promise<void>>();
+  pendientes() {
+    return Promise.all([...this.enVuelo]);
+  }
+
+  private async escribir(e: EntradaBitacora) {
     try {
       await this.prisma.db.orm.public.Bitacora.create({
         sedeId: e.sedeId ?? null,

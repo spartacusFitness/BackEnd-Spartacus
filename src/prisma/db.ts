@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { supabase } from '@prisma/orm-extension-supabase/runtime';
+import supabaseRuntime from '@prisma/orm-extension-supabase/runtime';
+import postgres from '@prisma/orm-postgres/runtime';
 import { contractFromJson } from '@prisma/orm-postgres/static';
 import type { Contract } from './contract.d.js';
 import contractJson from './contract.json' with { type: 'json' };
@@ -7,18 +8,24 @@ import contractJson from './contract.json' with { type: 'json' };
 export const contract = contractFromJson<Contract>(contractJson);
 
 /**
- * Cliente de Supabase (Postgres por el pooler de SESIÓN).
- * Es "por rol": asUser(jwt) respeta RLS como esa persona; asServiceRole() lo omite.
+ * Cliente de Postgres (Supabase, pooler de SESIÓN) con el que consulta el backend.
+ *
+ * Velocidad: antes usábamos `supabase(...).asServiceRole()`, que envuelve CADA consulta en
+ * set_config(role) + set_config(claims) + consulta + RESET ALL + RESET ROLE = 5 viajes a la base
+ * (~480 ms desde aquí). Este cliente hace 1 viaje (~100 ms).
+ *
+ * Seguridad: el backend es la única capa de confianza (valida JWT, dispositivo, firma y roles antes
+ * de consultar). Se conecta como `postgres`, dueño de las tablas y con BYPASSRLS, igual que
+ * service_role. RLS sigue activo y sin políticas, así que `anon`/`authenticated` (la Data API
+ * pública) no pueden leer ni escribir nada.
  */
-export const supabaseDb = await supabase({
+export const db = postgres({
   contract,
   url: process.env['DATABASE_URL']!,
-  jwksUrl: `${process.env['SUPABASE_URL']}/auth/v1/.well-known/jwks.json`,
+  extensions: [supabaseRuntime],
+  // Reabrir una conexión TLS a us-west-2 cuesta ~1 s: mantenlas abiertas mientras haya uso.
+  poolOptions: { idleTimeoutMillis: 10 * 60 * 1000, connectionTimeoutMillis: 15_000 },
 });
 
-/**
- * El backend es la capa de confianza: valida sesión, firma y permisos antes de consultar,
- * así que por ahora consulta como service_role. Cuando migremos el login a Supabase Auth
- * podremos usar asUser(jwt) para que el RLS también filtre por persona.
- */
-export const db = supabaseDb.asServiceRole();
+/** Alias conservado para scripts y pruebas que hacen `supabaseDb.close()`. */
+export const supabaseDb = db;

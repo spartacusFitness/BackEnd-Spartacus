@@ -37,42 +37,48 @@ export class ReportesService {
     const inicio = new Date(`${desde}T00:00:00-06:00`);
     const fin = new Date(`${hasta}T23:59:59.999-06:00`);
 
-    const pagos = await this.orm.Pago.where((p) => p.sedeId.in(ids))
+    const hoyD = aFecha(hoy());
+    // Todas las lecturas a la vez (antes, 7 seguidas); los detalles dependen de los pagos.
+    const pagosP = this.orm.Pago.where((p) => p.sedeId.in(ids))
       .where((p) => p.createdAt.gte(inicio))
       .where((p) => p.createdAt.lte(fin))
       .select('id', 'sedeId', 'metodo', 'total', 'createdAt')
       .all();
-    const detalles: { pagoId: number; tipo: string; descripcion: string; cantidad: number; precioUnitario: number }[] = [];
-    for (let i = 0; i < pagos.length; i += 500) {
-      const lote = pagos.slice(i, i + 500).map((p) => p.id);
-      detalles.push(...(await this.orm.PagoDetalle.where((d) => d.pagoId.in(lote)).select('pagoId', 'tipo', 'descripcion', 'cantidad', 'precioUnitario').all()));
-    }
-    const asistencias = await this.orm.Asistencia.where((a) => a.sedeId.in(ids))
-      .where((a) => a.createdAt.gte(inicio))
-      .where((a) => a.createdAt.lte(fin))
-      .select('sedeId', 'resultado', 'createdAt')
-      .all();
-    const nuevas = await this.orm.Membresia.where((m) => m.sedeId.in(ids))
-      .where((m) => m.createdAt.gte(inicio))
-      .where((m) => m.createdAt.lte(fin))
-      .select('sedeId')
-      .all();
-    const hoyD = aFecha(hoy());
-    const vigentes = await this.orm.Membresia.where((m) => m.sedeId.in(ids))
-      .where((m) => m.inicio.lte(hoyD))
-      .where((m) => m.fin.gte(hoyD))
-      .where((m) => m.canceladaEn.isNull())
-      .select('sedeId', 'perfilId')
-      .all();
-    const turnos = await this.orm.Turno.where((t) => t.sedeId.in(ids))
-      .where((t) => t.cerradoEn.gte(inicio))
-      .where((t) => t.cerradoEn.lte(fin))
-      .select('sedeId', 'diferencia')
-      .all();
-    const stockBajo = await this.orm.Producto.where((p) => p.sedeId.in(ids))
-      .where({ activo: true })
-      .select('id', 'sedeId', 'nombre', 'icono', 'stock', 'stockMinimo')
-      .all();
+    const detallesP = pagosP.then(async (pagos) => {
+      const lotes = [];
+      for (let i = 0; i < pagos.length; i += 500) lotes.push(pagos.slice(i, i + 500).map((p) => p.id));
+      const partes = await Promise.all(lotes.map((lote) => this.orm.PagoDetalle.where((d) => d.pagoId.in(lote)).select('pagoId', 'tipo', 'descripcion', 'cantidad', 'precioUnitario').all()));
+      return partes.flat();
+    });
+    const [pagos, detalles, asistencias, nuevas, vigentes, turnos, stockBajo] = await Promise.all([
+      pagosP,
+      detallesP,
+      this.orm.Asistencia.where((a) => a.sedeId.in(ids))
+        .where((a) => a.createdAt.gte(inicio))
+        .where((a) => a.createdAt.lte(fin))
+        .select('sedeId', 'resultado', 'createdAt')
+        .all(),
+      this.orm.Membresia.where((m) => m.sedeId.in(ids))
+        .where((m) => m.createdAt.gte(inicio))
+        .where((m) => m.createdAt.lte(fin))
+        .select('sedeId')
+        .all(),
+      this.orm.Membresia.where((m) => m.sedeId.in(ids))
+        .where((m) => m.inicio.lte(hoyD))
+        .where((m) => m.fin.gte(hoyD))
+        .where((m) => m.canceladaEn.isNull())
+        .select('sedeId', 'perfilId')
+        .all(),
+      this.orm.Turno.where((t) => t.sedeId.in(ids))
+        .where((t) => t.cerradoEn.gte(inicio))
+        .where((t) => t.cerradoEn.lte(fin))
+        .select('sedeId', 'diferencia')
+        .all(),
+      this.orm.Producto.where((p) => p.sedeId.in(ids))
+        .where({ activo: true })
+        .select('id', 'sedeId', 'nombre', 'icono', 'stock', 'stockMinimo')
+        .all(),
+    ]);
 
     // Importe por tipo de cada pago (membresía / producto / promoción).
     const tipoPorPago = new Map<number, Record<string, number>>();

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { config } from '../config.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { nearest } from '../sedes.js';
+import { authCache } from './auth-cache.js';
 import type { SupabaseClaims } from './supabase-jwt.js';
 
 export type RolNombre = 'admin' | 'encargado' | 'recepcion' | 'coach' | 'socio';
@@ -71,9 +72,13 @@ export class PerfilesService {
   }
 
   async yo(perfilId: string): Promise<Yo> {
-    const p = await this.orm.Perfil.first({ id: perfilId });
+    const [p, roles, sedes] = await Promise.all([
+      this.orm.Perfil.first({ id: perfilId }),
+      this.roles(perfilId),
+      this.orm.Sede.select('id', 'nombre').all(), // 3 filas: más barato que esperar al perfil para pedir la suya
+    ]);
     if (!p) throw new UnauthorizedException({ message: 'Tu cuenta ya no existe.', code: 'perfil_missing' });
-    const sede = p.sedeId ? await this.orm.Sede.where({ id: p.sedeId }).select('id', 'nombre').first() : null;
+    const sede = p.sedeId ? sedes.find((s) => s.id === p.sedeId) : null;
     return {
       id: p.id,
       email: p.email,
@@ -82,7 +87,7 @@ export class PerfilesService {
       fotoUrl: p.fotoUrl,
       fechaNacimiento: p.fechaNacimiento ? p.fechaNacimiento.toISOString().slice(0, 10) : null,
       sede: sede ?? null,
-      roles: await this.roles(perfilId),
+      roles,
     };
   }
 
@@ -93,6 +98,7 @@ export class PerfilesService {
     await this.orm.Perfil.where({ id: perfilId }).update({ sedeId: sede.id });
     await this.orm.RolAsignado.where({ perfilId, rol: 'socio' }).deleteAll();
     await this.orm.RolAsignado.create({ perfilId, rol: 'socio', sedeId: sede.id });
+    authCache.invalidarPerfil(perfilId);
     return this.yo(perfilId);
   }
 

@@ -31,15 +31,19 @@ export class RecepcionController {
   @Get('estado')
   async estado(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string) {
     this.permiso(req, sedeId);
-    const sede = await this.gym.sede(sedeId);
-    await this.gym.vencerSolicitudes(sedeId);
-    const turno = await this.gym.turnoAbierto(sedeId);
-    const recepcionistas = await this.orm.Recepcionista.where({ sedeId, activo: true }).select('id', 'nombre').orderBy((r) => r.nombre.asc()).all();
-    const pendientes = await this.orm.Solicitud.where({ sedeId, estado: 'pendiente_pago' }).aggregate((a) => ({ n: a.count() }));
     const desde = new Date(`${hoy()}T00:00:00-06:00`);
-    const entradas = await this.orm.Asistencia.where({ sedeId, resultado: 'permitida' })
-      .where((a) => a.createdAt.gte(desde))
-      .aggregate((a) => ({ n: a.count() }));
+    // Todo en paralelo; el resumen del turno sale en cuanto se conoce el turno.
+    const turnoP = this.gym.turnoAbierto(sedeId);
+    const [sede, turno, resumen, recepcionistas, pendientes, entradas] = await Promise.all([
+      this.gym.sede(sedeId),
+      turnoP,
+      turnoP.then((t) => (t ? this.gym.resumenTurno(t.id) : null)),
+      this.orm.Recepcionista.where({ sedeId, activo: true }).select('id', 'nombre').orderBy((r) => r.nombre.asc()).all(),
+      this.gym.vencerSolicitudes(sedeId).then(() => this.orm.Solicitud.where({ sedeId, estado: 'pendiente_pago' }).aggregate((a) => ({ n: a.count() }))),
+      this.orm.Asistencia.where({ sedeId, resultado: 'permitida' })
+        .where((a) => a.createdAt.gte(desde))
+        .aggregate((a) => ({ n: a.count() })),
+    ]);
     return {
       sede: { id: sede.id, nombre: sede.nombre, antipassbackMin: sede.antipassbackMin },
       turno: turno
@@ -48,7 +52,7 @@ export class RecepcionController {
             abiertoEn: turno.abiertoEn,
             efectivoInicial: turno.efectivoInicial,
             recepcionista: recepcionistas.find((r) => r.id === turno.recepcionistaId)?.nombre ?? '',
-            ...(await this.gym.resumenTurno(turno.id)),
+            ...resumen,
           }
         : null,
       recepcionistas,
@@ -76,8 +80,11 @@ export class RecepcionController {
   @Get('turnos')
   async turnos(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string) {
     this.permiso(req, sedeId);
-    const ts = await this.orm.Turno.where({ sedeId }).orderBy((t) => t.id.desc()).limit(30).all();
-    const nombres = new Map((await this.orm.Recepcionista.where({ sedeId }).select('id', 'nombre').all()).map((r) => [r.id, r.nombre]));
+    const [ts, recs] = await Promise.all([
+      this.orm.Turno.where({ sedeId }).orderBy((t) => t.id.desc()).limit(30).all(),
+      this.orm.Recepcionista.where({ sedeId }).select('id', 'nombre').all(),
+    ]);
+    const nombres = new Map(recs.map((r) => [r.id, r.nombre]));
     return ts.map((t) => ({ ...t, recepcionista: nombres.get(t.recepcionistaId) ?? '' }));
   }
 
@@ -91,8 +98,8 @@ export class RecepcionController {
       .orderBy((s) => s.id.desc())
       .limit(100)
       .all();
-    const perfiles = await this.perfilesPorId(sols.map((s) => s.perfilId));
-    const planes = new Map((await this.orm.Plan.where({ sedeId }).all()).map((p) => [p.id, p]));
+    const [perfiles, planesFilas] = await Promise.all([this.perfilesPorId(sols.map((s) => s.perfilId)), this.orm.Plan.where({ sedeId }).all()]);
+    const planes = new Map(planesFilas.map((p) => [p.id, p]));
     return sols.map((s) => ({
       id: s.id,
       estado: s.estado,
@@ -119,25 +126,39 @@ export class RecepcionController {
     const base = this.orm.Perfil.where({ sedeId });
     const filtro = term.length >= 2 ? base.where((p) => (term.includes('@') ? p.email.ilike(`%${term}%`) : p.nombre.ilike(`%${term}%`))) : base;
     const ps = await filtro.select('id', 'nombre', 'email', 'fotoUrl', 'verificado').orderBy((p) => p.nombre.asc()).limit(30).all();
-    const socios = new Set((await this.orm.RolAsignado.where({ sedeId, rol: 'socio' }).select('perfilId').all()).map((r) => r.perfilId));
-    const out = [];
-    for (const p of ps.filter((p) => socios.has(p.id))) {
-      const m = await this.gym.membresiaVigente(p.id, sedeId);
-      out.push({ ...p, vigenteHasta: m ? ymd(m.fin) : null });
-    }
-    return out;
+    const ids = ps.map((p) => p.id);
+    if (!ids.length) return [];
+    // 2 consultas en paralelo para todos (antes: 1 por socio).
+    const dia = aFecha(hoy());
+    const [roles, vigentes] = await Promise.all([
+      this.orm.RolAsignado.where({ sedeId, rol: 'socio' }).where((r) => r.perfilId.in(ids)).select('perfilId').all(),
+      this.orm.Membresia.where({ sedeId })
+        .where((m) => m.perfilId.in(ids))
+        .where((m) => m.inicio.lte(dia))
+        .where((m) => m.fin.gte(dia))
+        .where((m) => m.canceladaEn.isNull())
+        .select('perfilId', 'fin')
+        .all(),
+    ]);
+    const socios = new Set(roles.map((r) => r.perfilId));
+    const fin = new Map<string, Date>();
+    for (const m of vigentes) if (!fin.has(m.perfilId) || fin.get(m.perfilId)! < m.fin) fin.set(m.perfilId, m.fin);
+    return ps.filter((p) => socios.has(p.id)).map((p) => ({ ...p, vigenteHasta: fin.has(p.id) ? ymd(fin.get(p.id)!) : null }));
   }
 
   /** GET /recepcion/:sedeId/socios/:perfilId — ficha para el mostrador. */
   @Get('socios/:perfilId')
   async ficha(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string, @Param('perfilId') perfilId: string) {
     this.permiso(req, sedeId);
-    const p = await this.orm.Perfil.first({ id: perfilId });
+    const [p, vigente, planesFilas, membresias, asistencias] = await Promise.all([
+      this.orm.Perfil.first({ id: perfilId }),
+      this.gym.membresiaVigente(perfilId, sedeId),
+      this.orm.Plan.where({ sedeId }).select('id', 'nombre').all(),
+      this.orm.Membresia.where({ perfilId, sedeId }).orderBy((m) => m.fin.desc()).limit(10).all(),
+      this.orm.Asistencia.where({ perfilId, sedeId }).orderBy((a) => a.id.desc()).limit(10).all(),
+    ]);
     if (!p || p.sedeId !== sedeId) throw new NotFoundException('Socio no encontrado en esta sede.');
-    const vigente = await this.gym.membresiaVigente(p.id, sedeId);
-    const planes = new Map((await this.orm.Plan.where({ sedeId }).select('id', 'nombre').all()).map((x) => [x.id, x.nombre]));
-    const membresias = await this.orm.Membresia.where({ perfilId, sedeId }).orderBy((m) => m.fin.desc()).limit(10).all();
-    const asistencias = await this.orm.Asistencia.where({ perfilId, sedeId }).orderBy((a) => a.id.desc()).limit(10).all();
+    const planes = new Map(planesFilas.map((x) => [x.id, x.nombre]));
     return {
       id: p.id,
       nombre: p.nombre,
