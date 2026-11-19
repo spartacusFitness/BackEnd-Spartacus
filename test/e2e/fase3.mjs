@@ -148,6 +148,16 @@ try {
   const fichaC2 = await C.call('GET', `/coach/${SEDE}/socios/${S.yo.id}`);
   check('el coach ve los cambios de la socia', fichaC2.body.pesoKg === 61.9 && fichaC2.body.objetivo === 'deficit' && fichaC2.body.salud?.alergias === 'Nuez, mariscos');
 
+  // ---------- Nutrición (fase 4) ----------
+  await o.Perfil.where({ id: S.yo.id }).update({ fechaNacimiento: new Date('1995-03-10T12:00:00Z') });
+  check('socia indica su sexo', (await S.call('PATCH', '/yo/fisico', { sexo: 'mujer' })).status === 200);
+  const nut = await S.call('GET', '/yo/nutricion');
+  const ideas = (nut.body.comidas ?? []).flatMap((c) => c.opciones).join(' ');
+  check('nutrición: calorías y macros calculados', nut.status === 200 && nut.body.calorias > 1000 && nut.body.proteinaG > 0 && nut.body.faltan.length === 0, `${nut.body.calorias} kcal, ${nut.body.proteinaG} g proteína`);
+  check('nutrición: sin sus alérgenos (nuez, mariscos)', nut.body.alergenosEvitados?.includes('nueces') && !/nuez|nueces|camar/i.test(ideas));
+  check('coach ve la nutrición de su socia', (await C.call('GET', `/coach/${SEDE}/socios/${S.yo.id}/nutricion`)).body.calorias === nut.body.calorias);
+  check('admin NO ve la nutrición (usa datos de salud)', (await A.call('GET', `/coach/${SEDE}/socios/${S.yo.id}/nutricion`)).status === 403);
+
   // ---------- Coaches de la sede ----------
   const cs = await A.call('GET', `/sedes/${SEDE}/coaches`);
   check('admin ve sus coaches con rutinas activas', cs.status === 200 && cs.body.length === 2 && cs.body.find((c) => c.email === coachEmail)?.rutinasActivas === 1);

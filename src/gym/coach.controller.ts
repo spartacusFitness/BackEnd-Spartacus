@@ -227,6 +227,20 @@ export class CoachController {
     return this.coach.ficha(req.auth.perfilId, this.sedeSocio(req), true);
   }
 
+  /** GET /yo/nutricion — recomendación orientativa (calorías, macros, agua e ideas sin sus alérgenos). */
+  @Get('yo/nutricion')
+  miNutricion(@Req() req: AuthedRequest) {
+    return this.coach.nutricion(req.auth.perfilId);
+  }
+
+  /** El coach ve la misma recomendación que su socio (usa alergias: solo coaches de la sede). */
+  @Get('coach/:sedeId/socios/:perfilId/nutricion')
+  async nutricionSocio(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string, @Param('perfilId') perfilId: string) {
+    if (!tieneRolEn(req.auth, sedeId, ['coach'])) throw new ForbiddenException('Solo los coaches de la sede ven la nutrición del socio.');
+    await this.coach.exigirSocio(perfilId, sedeId);
+    return this.coach.nutricion(perfilId);
+  }
+
   @Patch('yo/fisico')
   async miFisico(@Req() req: AuthedRequest, @Body() body: unknown) {
     await this.coach.actualizarFisico({ perfilId: req.auth.perfilId }, req.auth.perfilId, parse(fisicoSchema, body));

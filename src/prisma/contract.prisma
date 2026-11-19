@@ -204,6 +204,8 @@ model Perfil {
   alturaCm        Int?
   /// clave del catálogo de objetivos (deficit, volumen, recomposicion, …)
   objetivo        String?
+  /// mujer | hombre (opcional; solo para calcular el gasto calórico)
+  sexo            String?
   salud           Salud?
   mediciones      Medicion[]
   rutinas         Rutina[]

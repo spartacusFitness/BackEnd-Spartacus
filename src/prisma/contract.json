@@ -1706,6 +1706,13 @@
                   "kind": "scalar"
                 }
               },
+              "sexo": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
@@ -1918,6 +1925,9 @@
                 },
                 "sedeId": {
                   "column": "sedeId"
+                },
+                "sexo": {
+                  "column": "sexo"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -5227,6 +5237,11 @@
                   "dataType": "pg/text",
                   "nullable": true
                 },
+                "sexo": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-date@1",
                   "dataType": "pg/timestamptz",
@@ -6915,7 +6930,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "87cd1db0b1b04212ffbb34615efd95b429a278e123c8b6674babbd181e4f4d6a"
+    "storageHash": "4544dc8140817b182f9445414080320e39f4677384811574a5e33180964a1643"
   },
   "execution": {
     "executionHash": "c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9",

@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'87cd1db0b1b04212ffbb34615efd95b429a278e123c8b6674babbd181e4f4d6a'>;
+  StorageHashBase<'4544dc8140817b182f9445414080320e39f4677384811574a5e33180964a1643'>;
 export type ExecutionHash =
   ExecutionHashBase<'c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9'>;
 export type ProfileHash =
@@ -559,6 +559,7 @@ export namespace Models {
     nombre: FieldOutputTypes['public']['Perfil']['nombre'];
     objetivo: FieldOutputTypes['public']['Perfil']['objetivo'];
     sedeId: FieldOutputTypes['public']['Perfil']['sedeId'];
+    sexo: FieldOutputTypes['public']['Perfil']['sexo'];
     updatedAt: FieldOutputTypes['public']['Perfil']['updatedAt'];
     userId: FieldOutputTypes['public']['Perfil']['userId'];
     verificado: FieldOutputTypes['public']['Perfil']['verificado'];
@@ -1847,6 +1848,12 @@ type ContractBase = Omit<
                   readonly many: false;
                 };
                 readonly sedeId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sexo: {
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
@@ -4162,6 +4169,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly sexo: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -4294,6 +4305,7 @@ type ContractBase = Omit<
                 readonly nombre: { readonly column: 'nombre' };
                 readonly objetivo: { readonly column: 'objetivo' };
                 readonly sedeId: { readonly column: 'sedeId' };
+                readonly sexo: { readonly column: 'sexo' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly userId: { readonly column: 'userId' };
                 readonly verificado: { readonly column: 'verificado' };

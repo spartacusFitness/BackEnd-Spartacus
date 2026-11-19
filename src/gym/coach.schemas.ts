@@ -105,6 +105,7 @@ export const fisicoSchema = z
   .object({
     alturaCm: z.number().int().min(80, { error: 'La estatura va en centímetros (ej. 170).' }).max(250).nullable(),
     objetivo: z.enum(OBJETIVOS, { error: 'Elige un objetivo del catálogo.' }).nullable(),
+    sexo: z.enum(['mujer', 'hombre'], { error: 'Elige mujer u hombre.' }).nullable(),
   })
   .partial();
 

@@ -3,6 +3,7 @@ import { BitacoraService } from '../common/bitacora.service.js';
 import { aFecha, diaSemana, hoy, sumarDias, ymd, type Calendario } from '../common/fechas.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Actor } from './gym.service.js';
+import { planNutricion } from './nutricion.js';
 import { GymService } from './gym.service.js';
 
 export interface Racha {
@@ -149,6 +150,7 @@ export class CoachService {
       edad: edad(p.fechaNacimiento),
       alturaCm: p.alturaCm,
       objetivo: p.objetivo,
+      sexo: p.sexo,
       pesoKg: mediciones[0] ? mediciones[0].pesoGr / 1000 : null,
       mediciones: mediciones.map((m) => ({ id: m.id, fecha: ymd(m.fecha), pesoKg: m.pesoGr / 1000, notas: m.notas })),
       salud: verSalud ? { condiciones: salud?.condiciones ?? null, alergias: salud?.alergias ?? null } : null,
@@ -157,8 +159,8 @@ export class CoachService {
     };
   }
 
-  async actualizarFisico(actor: Actor, perfilId: string, input: { alturaCm?: number | null; objetivo?: string | null }) {
-    if (input.alturaCm === undefined && input.objetivo === undefined) throw new BadRequestException('No hay nada que cambiar.');
+  async actualizarFisico(actor: Actor, perfilId: string, input: { alturaCm?: number | null; objetivo?: string | null; sexo?: string | null }) {
+    if (input.alturaCm === undefined && input.objetivo === undefined && input.sexo === undefined) throw new BadRequestException('No hay nada que cambiar.');
     await this.orm.Perfil.where({ id: perfilId }).update(input);
     void this.bitacora.registrar({ actorPerfilId: actor.perfilId, accion: 'perfil.fisico', entidad: 'Perfil', entidadId: perfilId, datos: input });
   }
@@ -184,6 +186,31 @@ export class CoachService {
       registradoPor: actor.perfilId,
     });
     return { id: m.id, fecha: dia, pesoKg: m.pesoGr / 1000, notas: m.notas };
+  }
+
+  /* ---------------- Nutrición ---------------- */
+
+  /** Recomendación nutricional orientativa con sus datos, su asistencia real y sus alergias. */
+  async nutricion(perfilId: string) {
+    const desde = new Date(`${sumarDias(hoy(), -28)}T00:00:00-06:00`);
+    const [p, salud, medicion, visitas] = await Promise.all([
+      this.orm.Perfil.where({ id: perfilId }).select('fechaNacimiento', 'alturaCm', 'objetivo', 'sexo').first(),
+      this.orm.Salud.first({ perfilId }),
+      this.orm.Medicion.where({ perfilId }).orderBy([(m) => m.fecha.desc(), (m) => m.id.desc()]).select('pesoGr').first(),
+      this.orm.Asistencia.where({ perfilId, resultado: 'permitida' }).where((a) => a.createdAt.gte(desde)).select('createdAt').all(),
+    ]);
+    if (!p) throw new NotFoundException('Socio no encontrado.');
+    const dias = new Set(visitas.map((v) => hoy(v.createdAt))).size;
+    return planNutricion({
+      pesoKg: medicion ? medicion.pesoGr / 1000 : null,
+      alturaCm: p.alturaCm,
+      edad: edad(p.fechaNacimiento),
+      sexo: p.sexo === 'mujer' || p.sexo === 'hombre' ? p.sexo : null,
+      objetivo: p.objetivo,
+      diasPorSemana: dias / 4,
+      alergias: salud?.alergias ?? null,
+      condiciones: salud?.condiciones ?? null,
+    });
   }
 
   /* ---------------- Catálogo de la sede ---------------- */
