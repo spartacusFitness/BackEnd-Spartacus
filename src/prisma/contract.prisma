@@ -93,6 +93,8 @@ model Sede {
   maquinas        Maquina[]
   ejercicios      Ejercicio[]
   rutinas         Rutina[]
+  retos           Reto[]
+  mensajes        Mensaje[]
   createdAt       DateTime           @default(now()) @onCreate(now())
   updatedAt       temporal.UpdatedAt
 
@@ -210,6 +212,10 @@ model Perfil {
   objetivo        String?
   /// mujer | hombre (opcional; solo para calcular el gasto calórico)
   sexo            String?
+  /// aceptó aparecer en el ranking de su sede (con su apodo)
+  enRanking       Boolean                @default(false)
+  retos           RetoInscripcion[]
+  mensajes        Mensaje[]
   salud           Salud?
   mediciones      Medicion[]
   rutinas         Rutina[]
@@ -524,6 +530,56 @@ model RutinaEjercicio {
   /// segundos de descanso entre series
   descansoSeg  Int?
   indicaciones String?
+
+  @@rls
+}
+
+/// Reto de asistencia de una sede (p. ej. "Noviembre: 16 visitas").
+model Reto {
+  id            Int               @id @default(autoincrement())
+  sedeId        String
+  sede          Sede              @relation(fields: [sedeId], references: [id])
+  nombre        String
+  descripcion   String?
+  /// días distintos con entrada permitida entre desde y hasta
+  meta          Int
+  desde         DateTime
+  hasta         DateTime
+  premio        String?
+  activo        Boolean           @default(true)
+  inscripciones RetoInscripcion[]
+  createdAt     DateTime          @default(now()) @onCreate(now())
+  updatedAt     temporal.UpdatedAt
+
+  @@rls
+}
+
+model RetoInscripcion {
+  id        Int      @id @default(autoincrement())
+  retoId    Int
+  reto      Reto     @relation(fields: [retoId], references: [id], onDelete: Cascade)
+  perfilId  Uuid
+  perfil    Perfil   @relation(fields: [perfilId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @onCreate(now())
+
+  @@unique([retoId, perfilId])
+  @@rls
+}
+
+/// Conversación de un socio con los coaches de su sede (cualquier coach de la sede responde).
+model Mensaje {
+  id        Int      @id @default(autoincrement())
+  sedeId    String
+  sede      Sede     @relation(fields: [sedeId], references: [id])
+  socioId   Uuid
+  socio     Perfil   @relation(fields: [socioId], references: [id], onDelete: Cascade)
+  /// quien escribió: el socio o un coach
+  autorId   Uuid
+  deCoach   Boolean
+  texto     String
+  /// la otra parte ya lo vio
+  leido     Boolean  @default(false)
+  createdAt DateTime @default(now()) @onCreate(now())
 
   @@rls
 }

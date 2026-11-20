@@ -36,6 +36,10 @@
       "model": "Membresia",
       "namespace": "public"
     },
+    "Mensaje": {
+      "model": "Mensaje",
+      "namespace": "public"
+    },
     "MovimientoInventario": {
       "model": "MovimientoInventario",
       "namespace": "public"
@@ -70,6 +74,14 @@
     },
     "Recepcionista": {
       "model": "Recepcionista",
+      "namespace": "public"
+    },
+    "Reto": {
+      "model": "Reto",
+      "namespace": "public"
+    },
+    "RetoInscripcion": {
+      "model": "RetoInscripcion",
       "namespace": "public"
     },
     "RolAsignado": {
@@ -1251,6 +1263,133 @@
               "table": "Membresia"
             }
           },
+          "Mensaje": {
+            "fields": {
+              "autorId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "deCoach": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "leido": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "sedeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "socioId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "texto": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "sede": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sedeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Sede",
+                  "namespace": "public"
+                }
+              },
+              "socio": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "socioId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Perfil",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "autorId": {
+                  "column": "autorId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "deCoach": {
+                  "column": "deCoach"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "leido": {
+                  "column": "leido"
+                },
+                "sedeId": {
+                  "column": "sedeId"
+                },
+                "socioId": {
+                  "column": "socioId"
+                },
+                "texto": {
+                  "column": "texto"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Mensaje"
+            }
+          },
           "MovimientoInventario": {
             "fields": {
               "actorPerfilId": {
@@ -1661,6 +1800,13 @@
                   "kind": "scalar"
                 }
               },
+              "enRanking": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "fechaNacimiento": {
                 "nullable": true,
                 "type": {
@@ -1799,6 +1945,36 @@
                   "namespace": "public"
                 }
               },
+              "mensajes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "socioId"
+                  ]
+                },
+                "to": {
+                  "model": "Mensaje",
+                  "namespace": "public"
+                }
+              },
+              "retos": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "perfilId"
+                  ]
+                },
+                "to": {
+                  "model": "RetoInscripcion",
+                  "namespace": "public"
+                }
+              },
               "roles": {
                 "cardinality": "1:N",
                 "on": {
@@ -1907,6 +2083,9 @@
                 },
                 "email": {
                   "column": "email"
+                },
+                "enRanking": {
+                  "column": "enRanking"
                 },
                 "fechaNacimiento": {
                   "column": "fechaNacimiento"
@@ -2744,6 +2923,258 @@
               "table": "Recepcionista"
             }
           },
+          "Reto": {
+            "fields": {
+              "activo": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "descripcion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "desde": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "hasta": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "meta": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "nombre": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "premio": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sedeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              }
+            },
+            "relations": {
+              "inscripciones": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "retoId"
+                  ]
+                },
+                "to": {
+                  "model": "RetoInscripcion",
+                  "namespace": "public"
+                }
+              },
+              "sede": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "sedeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Sede",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "activo": {
+                  "column": "activo"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "descripcion": {
+                  "column": "descripcion"
+                },
+                "desde": {
+                  "column": "desde"
+                },
+                "hasta": {
+                  "column": "hasta"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "meta": {
+                  "column": "meta"
+                },
+                "nombre": {
+                  "column": "nombre"
+                },
+                "premio": {
+                  "column": "premio"
+                },
+                "sedeId": {
+                  "column": "sedeId"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "Reto"
+            }
+          },
+          "RetoInscripcion": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "perfilId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "retoId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "perfil": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "perfilId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Perfil",
+                  "namespace": "public"
+                }
+              },
+              "reto": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "retoId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Reto",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "perfilId": {
+                  "column": "perfilId"
+                },
+                "retoId": {
+                  "column": "retoId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "RetoInscripcion"
+            }
+          },
           "RolAsignado": {
             "fields": {
               "createdAt": {
@@ -3429,6 +3860,21 @@
                   "namespace": "public"
                 }
               },
+              "mensajes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sedeId"
+                  ]
+                },
+                "to": {
+                  "model": "Mensaje",
+                  "namespace": "public"
+                }
+              },
               "perfiles": {
                 "cardinality": "1:N",
                 "on": {
@@ -3501,6 +3947,21 @@
                 },
                 "to": {
                   "model": "Recepcionista",
+                  "namespace": "public"
+                }
+              },
+              "retos": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "sedeId"
+                  ]
+                },
+                "to": {
+                  "model": "Reto",
                   "namespace": "public"
                 }
               },
@@ -3972,6 +4433,11 @@
               "namespaceId": "public",
               "tableName": "Membresia"
             },
+            "Mensaje": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Mensaje"
+            },
             "MovimientoInventario": {
               "kind": "rls",
               "namespaceId": "public",
@@ -4016,6 +4482,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "Recepcionista"
+            },
+            "Reto": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "Reto"
+            },
+            "RetoInscripcion": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "RetoInscripcion"
             },
             "RolAsignado": {
               "kind": "rls",
@@ -4889,6 +5365,130 @@
               },
               "uniques": []
             },
+            "Mensaje": {
+              "columns": {
+                "autorId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "deCoach": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "leido": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "sedeId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "socioId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "texto": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Mensaje_sedeId_idx_d8464762"
+                  },
+                  "source": {
+                    "columns": [
+                      "sedeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Mensaje"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Sede"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "Mensaje_socioId_idx_5216aea5"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "socioId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Mensaje"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Perfil"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "sedeId"
+                  ],
+                  "name": "Mensaje_sedeId_idx_d8464762",
+                  "prefix": "Mensaje_sedeId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "socioId"
+                  ],
+                  "name": "Mensaje_socioId_idx_5216aea5",
+                  "prefix": "Mensaje_socioId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "MovimientoInventario": {
               "checks": [
                 {
@@ -5222,6 +5822,15 @@
                 "email": {
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
+                  "nullable": false
+                },
+                "enRanking": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
                   "nullable": false
                 },
                 "fechaNacimiento": {
@@ -5993,6 +6602,234 @@
                 ]
               },
               "uniques": []
+            },
+            "Reto": {
+              "columns": {
+                "activo": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "descripcion": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "desde": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "hasta": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "meta": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                },
+                "nombre": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "premio": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "sedeId": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "Reto_sedeId_idx_d8464762"
+                  },
+                  "source": {
+                    "columns": [
+                      "sedeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Reto"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Sede"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "sedeId"
+                  ],
+                  "name": "Reto_sedeId_idx_d8464762",
+                  "prefix": "Reto_sedeId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "RetoInscripcion": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "perfilId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "retoId": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "RetoInscripcion_retoId_idx_a06503da"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "retoId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RetoInscripcion"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Reto"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "RetoInscripcion_perfilId_idx_18f1fe5e"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "perfilId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "RetoInscripcion"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Perfil"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "perfilId"
+                  ],
+                  "name": "RetoInscripcion_perfilId_idx_18f1fe5e",
+                  "prefix": "RetoInscripcion_perfilId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "retoId"
+                  ],
+                  "name": "RetoInscripcion_retoId_idx_a06503da",
+                  "prefix": "RetoInscripcion_retoId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "retoId",
+                    "perfilId"
+                  ]
+                }
+              ]
             },
             "RolAsignado": {
               "checks": [
@@ -6968,10 +7805,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8434bdf8726866c8c0be2bae7f4c45d20fbb844f7a32dd014c7c546263da6be3"
+    "storageHash": "bee570c7ce8e2d378da10891b9c674395b23d9e783aa8e51e1e8c1e2ec0aac4c"
   },
   "execution": {
-    "executionHash": "c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9",
+    "executionHash": "a432aa170f4fc4eba61286b002058ad5035fec24f3ca53db3130d347e6de6c86",
     "mutations": {
       "defaults": [
         {
@@ -7103,6 +7940,20 @@
           },
           "ref": {
             "entry": "Membresia",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Mensaje",
             "field": "createdAt",
             "namespace": "public"
           }
@@ -7318,6 +8169,55 @@
           "ref": {
             "entry": "Recepcionista",
             "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Reto",
+            "field": "createdAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "Reto",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator",
+            "params": {
+              "precision": 3
+            }
+          },
+          "ref": {
+            "entry": "RetoInscripcion",
+            "field": "createdAt",
             "namespace": "public"
           }
         },

@@ -23,9 +23,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'8434bdf8726866c8c0be2bae7f4c45d20fbb844f7a32dd014c7c546263da6be3'>;
+  StorageHashBase<'bee570c7ce8e2d378da10891b9c674395b23d9e783aa8e51e1e8c1e2ec0aac4c'>;
 export type ExecutionHash =
-  ExecutionHashBase<'c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9'>;
+  ExecutionHashBase<'a432aa170f4fc4eba61286b002058ad5035fec24f3ca53db3130d347e6de6c86'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -509,6 +509,19 @@ export namespace Models {
     plan: public_Plan;
     readonly [RelationKeys]?: 'perfil' | 'plan';
   };
+  export type public_Mensaje = {
+    autorId: FieldOutputTypes['public']['Mensaje']['autorId'];
+    createdAt: FieldOutputTypes['public']['Mensaje']['createdAt'];
+    deCoach: FieldOutputTypes['public']['Mensaje']['deCoach'];
+    id: FieldOutputTypes['public']['Mensaje']['id'];
+    leido: FieldOutputTypes['public']['Mensaje']['leido'];
+    sedeId: FieldOutputTypes['public']['Mensaje']['sedeId'];
+    socioId: FieldOutputTypes['public']['Mensaje']['socioId'];
+    texto: FieldOutputTypes['public']['Mensaje']['texto'];
+    sede: public_Sede;
+    socio: public_Perfil;
+    readonly [RelationKeys]?: 'sede' | 'socio';
+  };
   export type public_MovimientoInventario = {
     actorPerfilId: FieldOutputTypes['public']['MovimientoInventario']['actorPerfilId'];
     cantidad: FieldOutputTypes['public']['MovimientoInventario']['cantidad'];
@@ -553,6 +566,7 @@ export namespace Models {
     apodo: FieldOutputTypes['public']['Perfil']['apodo'];
     createdAt: FieldOutputTypes['public']['Perfil']['createdAt'];
     email: FieldOutputTypes['public']['Perfil']['email'];
+    enRanking: FieldOutputTypes['public']['Perfil']['enRanking'];
     fechaNacimiento: FieldOutputTypes['public']['Perfil']['fechaNacimiento'];
     fotoUrl: FieldOutputTypes['public']['Perfil']['fotoUrl'];
     id: FieldOutputTypes['public']['Perfil']['id'];
@@ -567,6 +581,8 @@ export namespace Models {
     dispositivos: public_Dispositivo[];
     mediciones: public_Medicion[];
     membresias: public_Membresia[];
+    mensajes: public_Mensaje[];
+    retos: public_RetoInscripcion[];
     roles: public_RolAsignado[];
     rutinas: public_Rutina[];
     salud: public_Salud | null;
@@ -577,6 +593,8 @@ export namespace Models {
       | 'dispositivos'
       | 'mediciones'
       | 'membresias'
+      | 'mensajes'
+      | 'retos'
       | 'roles'
       | 'rutinas'
       | 'salud'
@@ -661,6 +679,31 @@ export namespace Models {
     turnos: public_Turno[];
     readonly [RelationKeys]?: 'sede' | 'turnos';
   };
+  export type public_Reto = {
+    activo: FieldOutputTypes['public']['Reto']['activo'];
+    createdAt: FieldOutputTypes['public']['Reto']['createdAt'];
+    descripcion: FieldOutputTypes['public']['Reto']['descripcion'];
+    desde: FieldOutputTypes['public']['Reto']['desde'];
+    hasta: FieldOutputTypes['public']['Reto']['hasta'];
+    id: FieldOutputTypes['public']['Reto']['id'];
+    meta: FieldOutputTypes['public']['Reto']['meta'];
+    nombre: FieldOutputTypes['public']['Reto']['nombre'];
+    premio: FieldOutputTypes['public']['Reto']['premio'];
+    sedeId: FieldOutputTypes['public']['Reto']['sedeId'];
+    updatedAt: FieldOutputTypes['public']['Reto']['updatedAt'];
+    inscripciones: public_RetoInscripcion[];
+    sede: public_Sede;
+    readonly [RelationKeys]?: 'inscripciones' | 'sede';
+  };
+  export type public_RetoInscripcion = {
+    createdAt: FieldOutputTypes['public']['RetoInscripcion']['createdAt'];
+    id: FieldOutputTypes['public']['RetoInscripcion']['id'];
+    perfilId: FieldOutputTypes['public']['RetoInscripcion']['perfilId'];
+    retoId: FieldOutputTypes['public']['RetoInscripcion']['retoId'];
+    perfil: public_Perfil;
+    reto: public_Reto;
+    readonly [RelationKeys]?: 'perfil' | 'reto';
+  };
   export type public_RolAsignado = {
     createdAt: FieldOutputTypes['public']['RolAsignado']['createdAt'];
     id: FieldOutputTypes['public']['RolAsignado']['id'];
@@ -733,11 +776,13 @@ export namespace Models {
     diasCerrados: public_DiaCerrado[];
     ejercicios: public_Ejercicio[];
     maquinas: public_Maquina[];
+    mensajes: public_Mensaje[];
     perfiles: public_Perfil[];
     planes: public_Plan[];
     productos: public_Producto[];
     promociones: public_Promocion[];
     recepcionistas: public_Recepcionista[];
+    retos: public_Reto[];
     roles: public_RolAsignado[];
     rutinas: public_Rutina[];
     turnos: public_Turno[];
@@ -745,11 +790,13 @@ export namespace Models {
       | 'diasCerrados'
       | 'ejercicios'
       | 'maquinas'
+      | 'mensajes'
       | 'perfiles'
       | 'planes'
       | 'productos'
       | 'promociones'
       | 'recepcionistas'
+      | 'retos'
       | 'roles'
       | 'rutinas'
       | 'turnos';
@@ -797,6 +844,7 @@ export declare const models: {
     Maquina: Models.public_Maquina;
     Medicion: Models.public_Medicion;
     Membresia: Models.public_Membresia;
+    Mensaje: Models.public_Mensaje;
     MovimientoInventario: Models.public_MovimientoInventario;
     Pago: Models.public_Pago;
     PagoDetalle: Models.public_PagoDetalle;
@@ -806,6 +854,8 @@ export declare const models: {
     Promocion: Models.public_Promocion;
     PromocionProducto: Models.public_PromocionProducto;
     Recepcionista: Models.public_Recepcionista;
+    Reto: Models.public_Reto;
+    RetoInscripcion: Models.public_RetoInscripcion;
     RolAsignado: Models.public_RolAsignado;
     Rutina: Models.public_Rutina;
     RutinaDia: Models.public_RutinaDia;
@@ -1534,6 +1584,110 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly Mensaje: {
+              columns: {
+                readonly autorId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly deCoach: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly leido: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                  readonly many: false;
+                };
+                readonly sedeId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly socioId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly texto: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Mensaje_sedeId_idx_d8464762';
+                  readonly prefix: 'Mensaje_sedeId_idx';
+                  readonly columns: readonly ['sedeId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'Mensaje_socioId_idx_5216aea5';
+                  readonly prefix: 'Mensaje_socioId_idx';
+                  readonly columns: readonly ['socioId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Mensaje';
+                    readonly columns: readonly ['sedeId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Sede';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Mensaje';
+                    readonly columns: readonly ['socioId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Perfil';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly MovimientoInventario: {
               columns: {
                 readonly actorPerfilId: {
@@ -1816,6 +1970,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly enRanking: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly fechaNacimiento: {
@@ -2468,6 +2632,189 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'Sede';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly Reto: {
+              columns: {
+                readonly activo: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly descripcion: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly desde: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly hasta: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly meta: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly nombre: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly premio: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly sedeId: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'Reto_sedeId_idx_d8464762';
+                  readonly prefix: 'Reto_sedeId_idx';
+                  readonly columns: readonly ['sedeId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Reto';
+                    readonly columns: readonly ['sedeId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Sede';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly RetoInscripcion: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                  readonly many: false;
+                };
+                readonly perfilId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly retoId: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['retoId', 'perfilId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'RetoInscripcion_perfilId_idx_18f1fe5e';
+                  readonly prefix: 'RetoInscripcion_perfilId_idx';
+                  readonly columns: readonly ['perfilId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'RetoInscripcion_retoId_idx_a06503da';
+                  readonly prefix: 'RetoInscripcion_retoId_idx';
+                  readonly columns: readonly ['retoId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'RetoInscripcion';
+                    readonly columns: readonly ['retoId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Reto';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'RetoInscripcion';
+                    readonly columns: readonly ['perfilId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'Perfil';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -3277,6 +3624,7 @@ type ContractBase = Omit<
     readonly Maquina: { readonly namespace: 'public' & NamespaceId; readonly model: 'Maquina' };
     readonly Medicion: { readonly namespace: 'public' & NamespaceId; readonly model: 'Medicion' };
     readonly Membresia: { readonly namespace: 'public' & NamespaceId; readonly model: 'Membresia' };
+    readonly Mensaje: { readonly namespace: 'public' & NamespaceId; readonly model: 'Mensaje' };
     readonly MovimientoInventario: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'MovimientoInventario';
@@ -3297,6 +3645,11 @@ type ContractBase = Omit<
     readonly Recepcionista: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'Recepcionista';
+    };
+    readonly Reto: { readonly namespace: 'public' & NamespaceId; readonly model: 'Reto' };
+    readonly RetoInscripcion: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RetoInscripcion';
     };
     readonly RolAsignado: {
       readonly namespace: 'public' & NamespaceId;
@@ -3923,6 +4276,83 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Mensaje: {
+            readonly fields: {
+              readonly autorId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly deCoach: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly leido: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly sedeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly socioId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly texto: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+            };
+            readonly relations: {
+              readonly sede: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Sede' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['sedeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly socio: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Perfil';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['socioId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Mensaje';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly autorId: { readonly column: 'autorId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly deCoach: { readonly column: 'deCoach' };
+                readonly id: { readonly column: 'id' };
+                readonly leido: { readonly column: 'leido' };
+                readonly sedeId: { readonly column: 'sedeId' };
+                readonly socioId: { readonly column: 'socioId' };
+                readonly texto: { readonly column: 'texto' };
+              };
+            };
+          };
           readonly MovimientoInventario: {
             readonly fields: {
               readonly actorPerfilId: {
@@ -4163,6 +4593,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly enRanking: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly fechaNacimiento: {
                 readonly nullable: true;
                 readonly type: {
@@ -4257,6 +4691,28 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['perfilId'];
                 };
               };
+              readonly mensajes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Mensaje';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['socioId'];
+                };
+              };
+              readonly retos: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RetoInscripcion';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['perfilId'];
+                };
+              };
               readonly roles: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -4321,6 +4777,7 @@ type ContractBase = Omit<
                 readonly apodo: { readonly column: 'apodo' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly email: { readonly column: 'email' };
+                readonly enRanking: { readonly column: 'enRanking' };
                 readonly fechaNacimiento: { readonly column: 'fechaNacimiento' };
                 readonly fotoUrl: { readonly column: 'fotoUrl' };
                 readonly id: { readonly column: 'id' };
@@ -4819,6 +5276,166 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly Reto: {
+            readonly fields: {
+              readonly activo: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly descripcion: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly desde: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly hasta: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly meta: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly nombre: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly premio: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly sedeId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+            };
+            readonly relations: {
+              readonly inscripciones: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'RetoInscripcion';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['retoId'];
+                };
+              };
+              readonly sede: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Sede' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['sedeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'Reto';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly activo: { readonly column: 'activo' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly descripcion: { readonly column: 'descripcion' };
+                readonly desde: { readonly column: 'desde' };
+                readonly hasta: { readonly column: 'hasta' };
+                readonly id: { readonly column: 'id' };
+                readonly meta: { readonly column: 'meta' };
+                readonly nombre: { readonly column: 'nombre' };
+                readonly premio: { readonly column: 'premio' };
+                readonly sedeId: { readonly column: 'sedeId' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly RetoInscripcion: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly perfilId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly retoId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+            };
+            readonly relations: {
+              readonly perfil: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Perfil';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['perfilId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly reto: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Reto' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['retoId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'RetoInscripcion';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly perfilId: { readonly column: 'perfilId' };
+                readonly retoId: { readonly column: 'retoId' };
+              };
+            };
+          };
           readonly RolAsignado: {
             readonly fields: {
               readonly createdAt: {
@@ -5255,6 +5872,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['sedeId'];
                 };
               };
+              readonly mensajes: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Mensaje';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['sedeId'];
+                };
+              };
               readonly perfiles: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -5301,6 +5929,14 @@ type ContractBase = Omit<
                   readonly namespace: 'public' & NamespaceId;
                   readonly model: 'Recepcionista';
                 };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['sedeId'];
+                };
+              };
+              readonly retos: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'Reto' };
                 readonly cardinality: '1:N';
                 readonly on: {
                   readonly localFields: readonly ['id'];
@@ -5844,6 +6480,18 @@ type ContractBase = Omit<
             readonly params: { readonly precision: 3 };
           };
           readonly ref: {
+            readonly entry: 'Mensaje';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
             readonly entry: 'MovimientoInventario';
             readonly field: 'createdAt';
             readonly namespace: 'public';
@@ -6011,6 +6659,47 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'Recepcionista';
             readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Reto';
+            readonly field: 'createdAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly onUpdate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'Reto';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: {
+            readonly id: 'timestampNow';
+            readonly kind: 'generator';
+            readonly params: { readonly precision: 3 };
+          };
+          readonly ref: {
+            readonly entry: 'RetoInscripcion';
+            readonly field: 'createdAt';
             readonly namespace: 'public';
           };
         },

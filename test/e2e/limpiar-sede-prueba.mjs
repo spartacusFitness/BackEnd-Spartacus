@@ -12,6 +12,8 @@ if (antes) {
   await o.MovimientoInventario.where({ sedeId: SEDE }).deleteAll();
   await o.Promocion.where({ sedeId: SEDE }).deleteAll();
   await o.Producto.where({ sedeId: SEDE }).deleteAll();
+  await o.Reto.where({ sedeId: SEDE }).deleteAll(); // inscripciones caen en cascada
+  await o.Mensaje.where({ sedeId: SEDE }).deleteAll();
   await o.Rutina.where({ sedeId: SEDE }).deleteAll(); // días y ejercicios de la rutina caen en cascada
   await o.Ejercicio.where({ sedeId: SEDE }).deleteAll();
   await o.Maquina.where({ sedeId: SEDE }).deleteAll();
