@@ -144,7 +144,20 @@ try {
   await R.call('POST', `/recepcion/${SEDE}/turno/abrir`, { recepcionistaId: rec.body.id, pin: '4321', efectivoInicial: 0 });
   const vv = await R.call('POST', `/recepcion/${SEDE}/ventas`, { items: [{ tipo: 'producto', id: visita.body.id, cantidad: 2 }], metodo: 'efectivo' });
   check('visita se vende sin stock (servicio)', visita.status === 201 && vv.status === 201 && vv.body.total === 12000, `${visita.status}/${vv.status} ${JSON.stringify(vv.body).slice(0, 160)}`);
-  check('servicio no lleva inventario → 400', (await R.call('POST', `/sedes/${SEDE}/productos/${visita.body.id}/inventario`, { tipo: 'entrada', cantidad: 5 })).status === 400);
+  // Regresión: editar un campo no debe rellenar los demás con sus valores por defecto.
+  const ed = await A.call('PATCH', `/sedes/${SEDE}/productos/${visita.body.id}`, { destacado: true });
+  check('fijar la visita la deja como servicio', ed.status === 200 && ed.body.esServicio === true, JSON.stringify(ed.body).slice(0, 120));
+  const plE = await A.call('POST', `/sedes/${SEDE}/planes`, { nombre: 'Estudiante', tipo: 'especial', duracionDias: 30, precio: 30000, pagoEnLinea: false, requiereValidacion: true, renovableEnLinea: false });
+  const plD = await A.call('PATCH', `/sedes/${SEDE}/planes/${plE.body.id}`, { activo: false });
+  check('desactivar un plan especial conserva sus reglas', plD.status === 200 && plD.body.pagoEnLinea === false && plD.body.requiereValidacion === true && plD.body.renovableEnLinea === false, JSON.stringify(plD.body).slice(0, 160));
+  // Eliminar: bloqueado si está en una promoción; si no, se borra con sus movimientos y la venta se conserva.
+  check('no se elimina un producto que está en una promoción → 409', (await A.call('DELETE', `/sedes/${SEDE}/productos/${pre.body.id}`)).status === 409);
+  check('recepción NO elimina productos', (await R.call('DELETE', `/sedes/${SEDE}/productos/${visita.body.id}`)).status === 403);
+  check('eliminar la visita (tenía ventas)', (await A.call('DELETE', `/sedes/${SEDE}/productos/${visita.body.id}`)).status === 204);
+  check('ya no aparece en productos', !(await A.call('GET', `/sedes/${SEDE}/productos?todos=1`)).body.some((p) => p.id === visita.body.id));
+  check('su venta sigue en el turno', vv.status === 201 && (await R.call('GET', `/recepcion/${SEDE}/estado`)).status === 200);
+  const serv2 = await A.call('POST', `/sedes/${SEDE}/productos`, { nombre: 'Clase muestra', categoria: 'otro', icono: 'visita', precio: 5000, esServicio: true });
+  check('servicio no lleva inventario (otro servicio) → 400', (await R.call('POST', `/sedes/${SEDE}/productos/${serv2.body.id}/inventario`, { tipo: 'entrada', cantidad: 5 })).status === 400);
   check('el servicio no aparece en stock bajo', !(await A.call('GET', `/reportes/resumen?desde=${hoyMx}&hasta=${hoyMx}`)).body.stockBajo.some((p) => p.id === visita.body.id));
 } catch (e) {
   fail++;

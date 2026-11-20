@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ICONOS } from './tienda.service.js';
-import { centavos, fecha } from './gym.schemas.js';
+import { centavos, fecha, parcial } from './gym.schemas.js';
 
 const texto = (min: number, max: number, msg: string) => z.string().trim().min(min, { error: msg }).max(max);
 const cantidad = z.number().int().min(1, { error: 'La cantidad debe ser al menos 1.' }).max(10_000);
@@ -16,10 +16,7 @@ export const productoCrearSchema = z.object({
   esServicio: z.boolean().default(false),
 });
 
-export const productoEditarSchema = productoCrearSchema
-  .omit({ stockInicial: true })
-  .extend({ activo: z.boolean(), destacado: z.boolean() })
-  .partial();
+export const productoEditarSchema = parcial(productoCrearSchema.omit({ stockInicial: true }).extend({ activo: z.boolean(), destacado: z.boolean() }));
 
 export const movimientoSchema = z.discriminatedUnion('tipo', [
   z.object({ tipo: z.literal('entrada'), cantidad, motivo: z.string().trim().max(200).optional() }),
@@ -46,7 +43,7 @@ export const promocionCrearSchema = z.object({
   imagenPath: z.string().max(200).optional(),
 });
 
-export const promocionEditarSchema = promocionCrearSchema.extend({ activa: z.boolean(), imagenPath: z.string().max(200).nullable() }).partial();
+export const promocionEditarSchema = parcial(promocionCrearSchema.extend({ activa: z.boolean(), imagenPath: z.string().max(200).nullable() }));
 
 export const imagenSchema = z.object({ tipo: z.enum(['image/jpeg', 'image/png', 'image/webp'], { error: 'La imagen debe ser JPG, PNG o WebP.' }) });
 

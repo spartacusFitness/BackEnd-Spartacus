@@ -32,6 +32,16 @@ export const recepcionistaEditarSchema = z
   .object({ nombre: texto(2, 60, 'Escribe el nombre.'), pin, activo: z.boolean() })
   .partial();
 
+/**
+ * Versión "todo opcional" para ediciones (PATCH). A diferencia de `.partial()`, quita los `.default()`:
+ * con `.partial()` un campo omitido tomaba su valor por defecto y la edición lo sobrescribía
+ * (p. ej. desactivar un plan lo volvía "contratable en línea"; editar un precio quitaba "es servicio").
+ */
+export function parcial<S extends z.ZodRawShape>(o: z.ZodObject<S>) {
+  const shape = Object.fromEntries(Object.entries(o.shape).map(([k, v]) => [k, ((v instanceof z.ZodDefault ? v.unwrap() : v) as z.ZodType).optional()]));
+  return z.object(shape) as unknown as ReturnType<z.ZodObject<S>['partial']>;
+}
+
 export const planCrearSchema = z.object({
   nombre: texto(2, 60, 'Escribe el nombre del plan.'),
   // La visita NO es un plan: se vende en mostrador como servicio (no registra al socio).
@@ -43,7 +53,7 @@ export const planCrearSchema = z.object({
   requiereValidacion: z.boolean().default(false),
   renovableEnLinea: z.boolean().default(true),
 });
-export const planEditarSchema = planCrearSchema.extend({ activo: z.boolean() }).partial();
+export const planEditarSchema = parcial(planCrearSchema.extend({ activo: z.boolean() }));
 
 export const solicitudSchema = z.object({
   planId: z.number().int().positive(),

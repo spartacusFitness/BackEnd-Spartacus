@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Delete, ForbiddenException, Get, HttpCode, NotFoundException, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard, type AuthedRequest } from '../auth/auth.guard.js';
 import { parse } from '../auth/auth.schemas.js';
 import { BitacoraService } from '../common/bitacora.service.js';
@@ -59,6 +59,28 @@ export class TiendaController {
     const p = await this.orm.Producto.where({ id: pid }).update(input);
     await this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'producto.editar', entidad: 'Producto', entidadId: pid, datos: { antes: { nombre: antes.nombre, precio: antes.precio, activo: antes.activo }, cambios: input } });
     return p;
+  }
+
+  /**
+   * DELETE — borra el producto por completo con sus movimientos de inventario. Las ventas no se pierden:
+   * cada venta guarda su propia copia del nombre y precio. Si está en una promoción, primero hay que quitarlo de ella.
+   */
+  @Delete('sedes/:id/productos/:pid')
+  @HttpCode(204)
+  async eliminarProducto(@Req() req: AuthedRequest, @Param('id') id: string, @Param('pid', ParseIntPipe) pid: number) {
+    exigirRolEn(req.auth, id, [...GESTION]);
+    const p = await this.orm.Producto.first({ id: pid });
+    if (!p || p.sedeId !== id) throw new NotFoundException('Producto no encontrado.');
+    const enPromos = await this.orm.PromocionProducto.where({ productoId: pid }).select('promocionId').all();
+    if (enPromos.length) {
+      const nombres = (await this.orm.Promocion.where({ sedeId: id }).select('id', 'nombre').all()).filter((x) => enPromos.some((e) => e.promocionId === x.id)).map((x) => `"${x.nombre}"`);
+      throw new ConflictException(`"${p.nombre}" está en la promoción ${nombres.join(', ')}. Quítalo de ahí (o borra la promoción) antes de eliminarlo.`);
+    }
+    await this.prisma.db.transaction(async (tx) => {
+      await tx.orm.public.MovimientoInventario.where({ productoId: pid }).deleteAll();
+      await tx.orm.public.Producto.where({ id: pid }).deleteAll();
+    });
+    void this.bitacora.registrar({ sedeId: id, actorPerfilId: req.auth.perfilId, accion: 'producto.eliminar', entidad: 'Producto', entidadId: pid, datos: { nombre: p.nombre, precio: p.precio, stock: p.stock } });
   }
 
   /** POST /sedes/:id/productos/:pid/inventario — entrada (staff) o ajuste por conteo (gestión). */
