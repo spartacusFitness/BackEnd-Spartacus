@@ -113,6 +113,8 @@ model Producto {
   stockMinimo  Int                  @default(0)
   /// servicio sin inventario (p. ej. Visita de un día): se vende sin descontar stock
   esServicio   Boolean              @default(false)
+  /// fijado con estrella: se muestra siempre arriba en Venta y en la lista de productos
+  destacado    Boolean              @default(false)
   activo       Boolean              @default(true)
   movimientos  MovimientoInventario[]
   enPromociones PromocionProducto[]

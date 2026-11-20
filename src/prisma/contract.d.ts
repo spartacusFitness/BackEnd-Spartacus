@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'bbae4d244100b6620e212a6de1fab1ce92baf22a0c9d237c74213d54cac00368'>;
+  StorageHashBase<'8434bdf8726866c8c0be2bae7f4c45d20fbb844f7a32dd014c7c546263da6be3'>;
 export type ExecutionHash =
   ExecutionHashBase<'c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9'>;
 export type ProfileHash =
@@ -606,6 +606,7 @@ export namespace Models {
     activo: FieldOutputTypes['public']['Producto']['activo'];
     categoria: FieldOutputTypes['public']['Producto']['categoria'];
     createdAt: FieldOutputTypes['public']['Producto']['createdAt'];
+    destacado: FieldOutputTypes['public']['Producto']['destacado'];
     esServicio: FieldOutputTypes['public']['Producto']['esServicio'];
     icono: FieldOutputTypes['public']['Producto']['icono'];
     id: FieldOutputTypes['public']['Producto']['id'];
@@ -2074,6 +2075,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
                   readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly destacado: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
                   readonly many: false;
                 };
                 readonly esServicio: {
@@ -4457,6 +4468,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly destacado: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly esServicio: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
@@ -4538,6 +4553,7 @@ type ContractBase = Omit<
                 readonly activo: { readonly column: 'activo' };
                 readonly categoria: { readonly column: 'categoria' };
                 readonly createdAt: { readonly column: 'createdAt' };
+                readonly destacado: { readonly column: 'destacado' };
                 readonly esServicio: { readonly column: 'esServicio' };
                 readonly icono: { readonly column: 'icono' };
                 readonly id: { readonly column: 'id' };

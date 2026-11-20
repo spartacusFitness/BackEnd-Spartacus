@@ -168,6 +168,11 @@ try {
   // ---------- Coaches de la sede ----------
   const cs = await A.call('GET', `/sedes/${SEDE}/coaches`);
   check('admin ve sus coaches con rutinas activas', cs.status === 200 && cs.body.length === 2 && cs.body.find((c) => c.email === coachEmail)?.rutinasActivas === 1);
+  const gen = await C.call('POST', `/coach/${SEDE}/socios/${S.yo.id}/rutina/generar`, { dias: 4 });
+  check('generar rutina: 4 días completos, sin guardar', gen.status === 200 && gen.body.rutina.dias.length === 4 && gen.body.rutina.dias.every((d) => d.ejercicios.length > 0) && gen.body.razones.length > 0, gen.status + ' ' + JSON.stringify(gen.body).slice(0, 160));
+  check('el coach acepta la propuesta tal cual', (await C.call('PUT', `/coach/${SEDE}/socios/${S.yo.id}/rutina`, gen.body.rutina)).status === 200);
+  check('generar con días inválidos → 400', (await C.call('POST', `/coach/${SEDE}/socios/${S.yo.id}/rutina/generar`, { dias: 9 })).status === 400);
+  check('la socia no puede generar rutinas', (await S.call('POST', `/coach/${SEDE}/socios/${S.yo.id}/rutina/generar`, {})).status === 403);
   check('quitar la rutina', (await C.call('DELETE', `/coach/${SEDE}/socios/${S.yo.id}/rutina`)).status === 204 && (await S.call('GET', '/yo/entrenamiento')).body.rutina === null);
   check('admin quita a un coach', (await A.call('DELETE', `/sedes/${SEDE}/coaches/${C.yo.id}`)).status === 204);
   check('…y pierde el acceso al instante (caché invalidada)', (await C.call('GET', `/coach/${SEDE}/socios`)).status === 403);

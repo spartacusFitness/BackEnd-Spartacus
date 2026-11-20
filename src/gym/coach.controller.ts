@@ -19,6 +19,7 @@ import {
   medicionSchema,
   OBJETIVOS,
   rutinaSchema,
+  generarRutinaSchema,
   saludSchema,
 } from './coach.schemas.js';
 import { CoachService } from './coach.service.js';
@@ -140,6 +141,16 @@ export class CoachController {
     exigirRolEn(req.auth, sedeId, [...ENTRENA]);
     await this.coach.exigirSocio(perfilId, sedeId);
     return this.coach.registrarMedicion({ perfilId: req.auth.perfilId }, perfilId, parse(medicionSchema, body));
+  }
+
+  /** POST …/rutina/generar — propuesta automática para que el coach la revise; no se guarda. */
+  @Post('coach/:sedeId/socios/:perfilId/rutina/generar')
+  @HttpCode(200)
+  async generarRutina(@Req() req: AuthedRequest, @Param('sedeId') sedeId: string, @Param('perfilId') perfilId: string, @Body() body: unknown) {
+    exigirRolEn(req.auth, sedeId, [...ENTRENA]);
+    const { dias } = parse(generarRutinaSchema, body ?? {});
+    await this.coach.exigirSocio(perfilId, sedeId);
+    return this.coach.sugerirRutina(perfilId, sedeId, tieneRolEn(req.auth, sedeId, ['coach']), dias);
   }
 
   /** PUT …/rutina — guarda la rutina nueva (la anterior queda en el historial). */

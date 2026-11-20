@@ -4,6 +4,7 @@ import { aFecha, diaSemana, hoy, sumarDias, ymd, type Calendario } from '../comm
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { Actor } from './gym.service.js';
 import { planNutricion } from './nutricion.js';
+import { generarRutina } from './rutinas.js';
 import { GymService } from './gym.service.js';
 
 export interface Racha {
@@ -218,6 +219,27 @@ export class CoachService {
       alergias: salud?.alergias ?? null,
       condiciones: salud?.condiciones ?? null,
     });
+  }
+
+  /* ---------------- Rutina sugerida ---------------- */
+
+  /** Arma una rutina completa con sus metas, nivel, edad, salud y el catálogo activo de la sede. No la guarda. */
+  async sugerirRutina(perfilId: string, sedeId: string, verSalud: boolean, dias?: number) {
+    const desde = new Date(`${sumarDias(hoy(), -28)}T00:00:00-06:00`);
+    const [p, salud, visitas, ejercicios] = await Promise.all([
+      this.orm.Perfil.where({ id: perfilId }).select('fechaNacimiento', 'objetivo').first(),
+      this.orm.Salud.first({ perfilId }),
+      this.orm.Asistencia.where({ perfilId, resultado: 'permitida' }).where((a) => a.createdAt.gte(desde)).select('createdAt').all(),
+      this.orm.Ejercicio.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'equipo', 'repeticiones').all(),
+    ]);
+    if (!p) throw new NotFoundException('Socio no encontrado.');
+    if (!ejercicios.length) throw new BadRequestException('La sede no tiene ejercicios activos. Agrega el catálogo primero.');
+    const g = generarRutina(
+      { objetivo: p.objetivo, edad: edad(p.fechaNacimiento), visitasSemana: new Set(visitas.map((v) => hoy(v.createdAt))).size / 4, condiciones: salud?.condiciones ?? null, dias },
+      ejercicios,
+    );
+    // Lo de salud es privado: solo lo leen los coaches.
+    return { rutina: g.rutina, razones: verSalud ? [...g.razones, ...g.razonesSalud] : g.razones, objetivo: p.objetivo };
   }
 
   /* ---------------- Catálogo de la sede ---------------- */

@@ -228,7 +228,7 @@ export class TiendaService {
   /** Catálogo para la app del socio: productos activos y promociones vigentes hoy. */
   async catalogo(sedeId: string) {
     const [productos, promociones] = await Promise.all([
-      this.orm.Producto.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock', 'esServicio').orderBy((p) => p.nombre.asc()).all(),
+      this.orm.Producto.where({ sedeId, activo: true }).select('id', 'nombre', 'categoria', 'icono', 'precio', 'stock', 'esServicio', 'destacado').orderBy((p) => p.nombre.asc()).all(),
       this.promociones(sedeId, true),
     ]);
     return {

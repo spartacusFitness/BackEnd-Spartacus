@@ -18,7 +18,7 @@ export const productoCrearSchema = z.object({
 
 export const productoEditarSchema = productoCrearSchema
   .omit({ stockInicial: true })
-  .extend({ activo: z.boolean() })
+  .extend({ activo: z.boolean(), destacado: z.boolean() })
   .partial();
 
 export const movimientoSchema = z.discriminatedUnion('tipo', [

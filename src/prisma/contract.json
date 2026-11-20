@@ -2175,6 +2175,13 @@
                   }
                 }
               },
+              "destacado": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "esServicio": {
                 "nullable": false,
                 "type": {
@@ -2300,6 +2307,9 @@
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "destacado": {
+                  "column": "destacado"
                 },
                 "esServicio": {
                   "column": "esServicio"
@@ -5532,6 +5542,15 @@
                     "precision": 3
                   }
                 },
+                "destacado": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
                 "esServicio": {
                   "codecId": "pg/bool@1",
                   "dataType": "pg/bool",
@@ -6949,7 +6968,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "bbae4d244100b6620e212a6de1fab1ce92baf22a0c9d237c74213d54cac00368"
+    "storageHash": "8434bdf8726866c8c0be2bae7f4c45d20fbb844f7a32dd014c7c546263da6be3"
   },
   "execution": {
     "executionHash": "c0018ddbf0b2ee4d009a10b47ed04b30e4bab1f45c36745df8b67bdf7966b1d9",

@@ -70,6 +70,8 @@ export const ejercicioEditarSchema = ejercicioBase
 
 /* ---------- Rutinas ---------- */
 
+export const generarRutinaSchema = z.object({ dias: z.number().int().min(2, { error: 'Entre 2 y 6 días.' }).max(6, { error: 'Entre 2 y 6 días.' }).optional() });
+
 export const rutinaSchema = z
   .object({
     nombre: texto(2, 80, 'Ponle nombre a la rutina (ej. Hipertrofia 4 días).'),

@@ -89,6 +89,9 @@ try {
   const R = await persona(`${SEDE}@recepcion.spartacus.app`, cuenta.body.contrasena);
   creados.push(R.userId);
   check('recepción NO crea productos', (await R.call('POST', `/sedes/${SEDE}/productos`, { nombre: 'Hack', categoria: 'otro', icono: 'otro', precio: 1 })).status === 403);
+  const fij = await A.call('PATCH', `/sedes/${SEDE}/productos/${agua.body.id}`, { destacado: true });
+  check('fijar producto con estrella', fij.status === 200 && fij.body.destacado === true, fij.status);
+  check('recepción NO fija productos', (await R.call('PATCH', `/sedes/${SEDE}/productos/${agua.body.id}`, { destacado: false })).status === 403);
   check('recepción NO cambia precios', (await R.call('PATCH', `/sedes/${SEDE}/productos/${agua.body.id}`, { precio: 1 })).status === 403);
   check('recepción NO hace ajustes', (await R.call('POST', `/sedes/${SEDE}/productos/${agua.body.id}/inventario`, { tipo: 'ajuste', stockContado: 999, motivo: 'hack' })).status === 403);
   check('recepción SÍ registra entradas', (await R.call('POST', `/sedes/${SEDE}/productos/${agua.body.id}/inventario`, { tipo: 'entrada', cantidad: 1 })).status === 201);
